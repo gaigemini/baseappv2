@@ -1,10 +1,10 @@
 import logging
 from minio import Minio
-from config import setting
+from baseapp.config import setting
 
 logger = logging.getLogger()
 
-class MinCon:
+class MinConn:
     def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, bucket="baseapp", verify=False):
         config = setting.get_settings()
         self.host = host or config.minio_host
@@ -29,6 +29,9 @@ class MinCon:
             logger.exception(f"Failed to connect to MinIO: {e}")
             self._conn = None
 
+    def __enter__(self):
+        return self
+    
     def get_minio_client(self):
         """
         Returns the MinIO client instance.
@@ -73,8 +76,7 @@ class MinCon:
         # but this method can be used for cleanup in future versions if required.
         logger.info("MinIO connection closed.")
 
-    def __enter__(self):
-        return self
+    
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()

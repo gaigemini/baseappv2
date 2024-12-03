@@ -4,6 +4,20 @@ from pydantic_settings import SettingsConfigDict, BaseSettings
 
 
 class Settings(BaseSettings):
+    # common
+    app_env:str
+    host:str
+    port:int
+    
+    # jwt
+    jwt_secret_key:str
+    jwt_algorithm:str
+    jwt_expired_in:int
+
+    # api credential
+    api_cipher_key:str
+    api_key_expired_in:int
+
     # mongodb
     mongodb_host: str
     mongodb_port: int
@@ -29,7 +43,7 @@ class Settings(BaseSettings):
     rabbitmq_host: str
     rabbitmq_port: int
 
-    # Minio settings
+    # Minio
     minio_host: str
     minio_port: int
     minio_access_key: str
@@ -37,12 +51,12 @@ class Settings(BaseSettings):
     minio_secure: bool = False
     minio_bucket: str
     minio_verify: bool = True
-    minio_domain: str
 
     file_location: str
 
     # Determine the env file based on the ENV environment variable
     env_file: ClassVar[str] = (
+        # print(os.getenv('ENV'))
         os.path.join(
             os.path.dirname(os.path.dirname(__file__)), f".env.{os.getenv('ENV')}"
         )

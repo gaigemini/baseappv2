@@ -1,9 +1,9 @@
 import redis,logging
-from config import setting
+from baseapp.config import setting
 
 logger = logging.getLogger()
 
-class Redis:
+class RedisConn:
     def __init__(self, host=None, port=None, max_connections=10):
         config = setting.get_settings()
         self.host = host or config.redis_host
@@ -24,8 +24,7 @@ class Redis:
             self.pool = None
             self._conn = None
     
-    @property
-    def conn(self):
+    def __enter__(self):
         if self._conn:
             try:
                 self._conn.ping()  # Tes koneksi
@@ -34,14 +33,16 @@ class Redis:
                 logger.exception("Redis connection error: %s", e)
                 return None
         return None
+    
+    def get_connection(self):
+        if not self._conn:
+            self.__enter__()
+        return self._conn
 
     def close(self):
         if self.pool:
             self.pool.disconnect()
             logger.info("Redis Connection Pool closed.")
-
-    def __enter__(self):
-        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
