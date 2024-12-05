@@ -1,7 +1,4 @@
 from fastapi import APIRouter
-import logging
-
-from baseapp.config import setting
 from baseapp.model.common import ApiResponse
 
 from baseapp.config import setting
@@ -11,6 +8,7 @@ from baseapp.utils.utility import get_response_based_on_env
 
 from baseapp.services.database import crud
 
+import logging
 logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/init")

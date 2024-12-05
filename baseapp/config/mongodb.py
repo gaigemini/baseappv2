@@ -99,7 +99,8 @@ class MongoConn:
                             data["_id"] = str(uuid.uuid4())  # Membuat _id baru dengan UUID jika belum ada
                         else:
                             data["_id"] = data["id"]
-
+                            del data["id"]
+                        
                     collection.insert_many(initial_data, ordered=False)  # Gunakan ordered=False untuk lewati error duplikasi
                     logger.info(f"Inserted {len(initial_data)} documents into {collection_name}")
                 except Exception as e:
