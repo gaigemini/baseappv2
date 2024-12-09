@@ -7,7 +7,7 @@ from pymongo.errors import DuplicateKeyError
 from baseapp.config import setting, mongodb
 from baseapp.services._org import model
 from baseapp.model.common import Status
-from baseapp.utils.utility import hash_password
+from baseapp.utils.utility import hash_password, get_enum
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -79,7 +79,48 @@ class CRUD:
         try:
             result = collection.insert_one(role_data)
             logger.info(f"Role created with id: {result.inserted_id}")
+
+            # trigger insert role on featuers
+            self.init_role_in_feature(org_data,result.inserted_id)
+
             return {"status": 0, "data": role_data}
+        except DuplicateKeyError:
+            logger.error("Duplicate Role ID detected.")
+            return {"status": 4, "message": "Role with the same ID already exists."}
+        except Exception as e:
+            logger.exception("Error creating role.")
+            return {"status": 4, "message": str(e)}
+
+    def init_role_in_feature(self, org_data, role_id):
+        """
+        Generate role in feature into the collection.
+        """
+        collection = self.mongo._db["_featureonrole"]
+        collection_features = self.mongo._db["_feature"]
+
+        try:
+            # get enum bit of roleaction
+            bitRA = get_enum("ROLEACTION")
+            totalBitRA = sum(bitRA["value"].values())
+
+            # list of features
+            filters = {
+                "authority": { "$bitsAnySet": org_data["authority"] }
+            }
+            get_features = collection_features.find(filters)
+            initial_data = []
+            for feature in get_features:
+                initial_data.append({
+                    "_id":str(uuid.uuid4()),
+                    "org_id": org_data["_id"],
+                    "r_id": role_id,
+                    "f_id": feature["_id"],
+                    "permission": totalBitRA-feature["negasiperm"][str(org_data['authority'])]
+                })
+            collection.insert_many(initial_data, ordered=False)
+            logger.info(f"Inserted {len(initial_data)} documents into _featureonrole")
+            
+            return {"status": 0, "data": initial_data}
         except DuplicateKeyError:
             logger.error("Duplicate User ID detected.")
             return {"status": 4, "message": "Role with the same ID already exists."}

@@ -16,6 +16,7 @@ class RedisConn:
                 host=self.host,
                 port=self.port,
                 max_connections=self.max_connections,
+                decode_responses=True
             )
             self._conn = redis.Redis(connection_pool=self.pool)
             logger.info("Redis Connection Pool established.")

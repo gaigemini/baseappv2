@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     # jwt
     jwt_secret_key:str
     jwt_algorithm:str
-    jwt_expired_in:int
+    jwt_access_expired_in:int
+    jwt_refresh_expired_in:int
 
     # api credential
     api_cipher_key:str

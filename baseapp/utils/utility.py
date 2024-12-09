@@ -1,9 +1,12 @@
-import cbor2
+import cbor2,bcrypt,string,secrets,requests
 from fastapi.responses import Response
+
+from baseapp.config import setting
 from baseapp.model.common import ApiResponse
-import bcrypt
-import string
-import secrets
+
+from baseapp.services._enum.crud import CRUD
+
+config = setting.get_settings()
 
 # Custom CBOR response class
 class CBORResponse(Response):
@@ -25,3 +28,17 @@ def generate_password(length: int = 8):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(characters) for _ in range(length))
     return password
+
+def get_enum(enum_id,use_api = False):
+    if use_api:
+        try:
+            response = requests.get(f"{config.host}/enum/{enum_id}")
+            response.raise_for_status()  # Raise error jika HTTP status bukan 200
+            response = response.json()
+            return response["data"]
+        except requests.RequestException as e:
+            return {"error": f"API call failed: {str(e)}"}
+    else:
+        _crud = CRUD()
+        response = _crud.get_by_id(enum_id)
+        return response["data"]

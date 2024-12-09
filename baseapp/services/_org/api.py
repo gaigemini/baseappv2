@@ -27,7 +27,7 @@ async def create(org: model.Organization, user:model.User) -> ApiResponse:
         else:
             return get_response_based_on_env(ApiResponse(status=response["status"], message=response["message"]), app_env=config.app_env)
     except Exception as err:
-        error_message = f"baseapp.services.database.api {err=}, {type(err)=}"
+        error_message = f"baseapp.services._org.api {err=}, {type(err)=}"
         logger.error(err, stack_info=True)
         response = ApiResponse(status=4, message=error_message)
         return get_response_based_on_env(response, app_env=config.app_env)

@@ -12,7 +12,7 @@ class Status(str, Enum):
 class CurrentUser(BaseModel):
     """current user"""
     id: str
-    username: str
+    name: str = Field(description="Content would be username or email or phonenumber")
     roles: str
     org_id: str
     org_name: str
