@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient,errors
 import logging,uuid
 from baseapp.config import setting
 
@@ -28,20 +28,32 @@ class MongoConn:
                 self._db = self._conn[self.database]
                 logger.info(f"Selected database: {self.database}")
 
+            return self
+        except errors.ServerSelectionTimeoutError as e:
+            logger.error(f"Failed to connect to MongoDB: {e}")
+            raise ConnectionError("Failed to connect to MongoDB")
+        except errors.OperationFailure as e:
+            logger.error(f"Authentication failed: {e}")
+            raise ConnectionError("Authentication failed to connect to MongoDB")
+        except errors.PyMongoError as e:
+            logger.error(f"MongoDB error: {e}")
+            raise 
         except Exception as e:
-            logger.exception("Failed to connect to MongoDB")
-            raise e
-
-        return self
+            logger.exception(f"Unexpected error: {e}")
+            raise
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.close()
-        if exc_type is not None:
-            logger.exception(f"mod: MongoConn.__exit__, exc_type: {exc_type}, exc_value: {exc_value}, exc_traceback: {exc_traceback}")
+        if self._conn:
+            self._conn.close()
+            logger.info("MongoDB connection closed.")
+        if exc_type:
+            logger.exception(f"Error type: {exc_type}, value: {exc_value}")
+            return False
 
     def get_database(self):
         if self._db is None:
             logger.warning("Database is not selected. Use __enter__ method with a database name.")
+            raise ValueError("Database is not selected")
         return self._db
 
     def get_connection(self):
@@ -62,7 +74,7 @@ class MongoConn:
         """
         if self._db is None:
             logger.error("Database is not selected.")
-            return
+            raise ValueError("Database is not selected.")
 
         logger.info("Starting database creation...")
 
@@ -73,38 +85,40 @@ class MongoConn:
             # 1. Membuat Indeks
             indexes = collection_config.get("index", [])
             for idx in indexes:
-                if isinstance(idx, str):  # Indeks sederhana
-                    collection.create_index(idx)
-                    logger.info(f"Created index on fields: {idx}")
-                elif isinstance(idx, dict):  # Indeks kompleks
-                    for index_name, fields in idx.items():
-                        index_fields = [(field, 1) for field in fields]
-                        collection.create_index(index_fields, name=index_name)
-                        logger.info(f"Created compound index: {index_name} on fields: {fields}")
+                try:
+                    if isinstance(idx, str):  # Indeks sederhana
+                        collection.create_index(idx)
+                        logger.info(f"Created index on fields: {idx}")
+                    elif isinstance(idx, dict):  # Indeks kompleks
+                        for index_name, fields in idx.items():
+                            index_fields = [(field, 1) for field in fields]
+                            collection.create_index(index_fields, name=index_name)
+                            logger.info(f"Created compound index: {index_name} on fields: {fields}")
+                except errors.PyMongoError as e:
+                    logger.error(f"Error creating index on collection '{collection_name}': {e}")
+                    raise ValueError("Error creating index on collection")
 
             # 2. Menambahkan Data Awal
             initial_data = collection_config.get("data", [])
             if initial_data:
                 logger.info(f"Inserting initial data into collection: {collection_name}")
-                # try:
-                #     collection.insert_many(initial_data, ordered=False)  # Gunakan ordered=False untuk lewati error duplikasi
-                #     logger.info(f"Inserted {len(initial_data)} documents into {collection_name}")
-                # except Exception as e:
-                #     logger.error(f"Failed to insert initial data into {collection_name}: {str(e)}")
-
                 try:
                     # Memeriksa dan menambahkan _id jika belum ada
                     for data in initial_data:
                         if "id" not in data:
-                            data["_id"] = str(uuid.uuid4())  # Membuat _id baru dengan UUID jika belum ada
+                            data["_id"] = str(uuid.uuid4())
                         else:
                             data["_id"] = data["id"]
                             del data["id"]
-                        
-                    collection.insert_many(initial_data, ordered=False)  # Gunakan ordered=False untuk lewati error duplikasi
+
+                    collection.insert_many(initial_data, ordered=False)
                     logger.info(f"Inserted {len(initial_data)} documents into {collection_name}")
-                except Exception as e:
-                    logger.error(f"Failed to insert initial data into {collection_name}: {str(e)}")
+                except errors.BulkWriteError as bwe:
+                    logger.error(f"Bulk write error in collection '{collection_name}': {bwe.details}")
+                    raise ValueError("Bulk write error in collection")
+                except errors.PyMongoError as e:
+                    logger.error(f"Error inserting data into collection '{collection_name}': {e}")
+                    raise ValueError("Error inserting data into collection")
 
         logger.info("Database creation completed.")
 
@@ -113,9 +127,15 @@ class MongoConn:
         Function to check if a database exists in MongoDB.
         """
         try:
-            # List all databases and check if the provided database name exists
             existing_databases = self._conn.list_database_names()
-            return self._db.name in existing_databases
+            if self._db.name in existing_databases:
+                return True
+            else:
+                logger.error(f"Error checking if database {self._db} exists")
+                raise ValueError(f"Error checking if database {self._db} exists")
+        except errors.PyMongoError as e:
+            logger.error(f"Error while checking database existence: {e}")
+            raise ValueError(f"Database operation failed: {e}")
         except Exception as e:
-            logger.error(f"Error checking if database {self._db} exists: {str(e)}")
-            return False
+            logger.exception(f"Unexpected error occurred while checking database existence: {e}")
+            raise

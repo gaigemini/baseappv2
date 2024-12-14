@@ -4,9 +4,10 @@ from typing import Dict, Any
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
+
 from baseapp.model.common import CurrentUser
 from baseapp.config.setting import get_settings
-# from baseapp.util.utility import is_valid_user
+from baseapp.services.auth.crud import CRUD as AuthCrud
 
 config = get_settings()
 jwt_secret_key = config.jwt_secret_key
@@ -33,34 +34,37 @@ def create_refresh_token(data: dict, expire_in: int = 7) -> tuple:
 def decode_jwt_token(token: str) -> Dict[str, Any]:
     return jwt.decode(token, jwt_secret_key, algorithms=[jwt_algorithm])
 
-def get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))) -> CurrentUser:
+def get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tokenUrl="v1/auth/token"))) -> CurrentUser:
     def credentials_exception(message: str):
         return HTTPException(
             status_code=401,
             detail=message,
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     try:
         credentials = decode_jwt_token(token)
+    
     except ExpiredSignatureError as err:
         error_message = f"get_current_user - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
         logging.error(error_message)
-        raise credentials_exception("Token expired.")
+        raise credentials_exception(message="Token expired")
+    
     except JWTError as err:
         error_message = f"get_current_user - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
         logging.error(error_message)
-        raise credentials_exception("Could not validate credentials")
+        raise credentials_exception(message="Could not validate credentials")
     
-    # if not is_valid_user(credentials["sub"]):
-    #     raise credentials_exception("Could not validate credentials")
+    if not AuthCrud().is_valid_user(credentials["sub"]):
+        raise credentials_exception("Could not validate credentials")
 
     return CurrentUser(
-        name=credentials["sub"],
         id=credentials["id"],
+        name=credentials["sub"],
         roles=credentials["roles"],
-        authority=credentials["authority"],
         org_id=credentials["org_id"],
         token=token,
-        log_id=ctx.state.log_id
+        authority=credentials["authority"],
+        log_id=ctx.state.log_id,
+        ip_address=ctx.client.host,
+        user_agent=ctx.headers.get("user-agent")
     )

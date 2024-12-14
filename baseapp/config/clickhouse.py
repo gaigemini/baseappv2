@@ -96,8 +96,7 @@ class ClickHouseConn:
             logger.info("ClickHouse: Connected to server successfully")
         except Exception as e:
             logger.error(f"ClickHouse: Error connecting to server: {e}")
-            self._conn = None
-            raise
+            raise ConnectionError("ClickHouse: Error connecting to server")
     
     def __enter__(self):
         """Establish a connection to the server and select the database."""
@@ -108,18 +107,22 @@ class ClickHouseConn:
         """Select the specified database after connecting to the server."""
         database = database or self.database
         if not self._conn:
-            raise Exception("Connection to server is not established")
+            raise ValueError("ClickHouse: Connection to server is not established")
         try:
             self._conn.command(f"USE {database}")
             logger.info(f"ClickHouse: Switched to database '{database}' successfully")
         except Exception as e:
             if "UNKNOWN_DATABASE" in str(e) and create_if_missing:
-                self._conn.command(f"CREATE DATABASE {database}")
-                logger.info(f"ClickHouse: Database '{database}' created successfully")
-                self._conn.command(f"USE {database}")
+                try:
+                    self._conn.command(f"CREATE DATABASE {database}")
+                    logger.info(f"ClickHouse: Database '{database}' created successfully")
+                    self._conn.command(f"USE {database}")
+                except Exception as db_create_error:
+                    logger.error(f"Error creating database '{database}': {db_create_error}")
+                    raise ValueError("ClickHouse: error creating database")
             else:
                 logger.error(f"ClickHouse: Error switching to database '{database}': {e}")
-                raise
+                raise ValueError("ClickHouse: Error switching to database")
 
     def get_connection(self):
         """Ensure a connection to the server and return the client."""
@@ -131,30 +134,31 @@ class ClickHouseConn:
         """Create a table using a schema object."""
         query = table_schema_obj.generate_create_table_query()
         self.execute_no_return(query)
-        logger.info(f"Table '{table_schema_obj.table_name}' created or already exists.")
+        logger.info(f"ClickHouse: Table '{table_schema_obj.table_name}' created or already exists.")
 
     def execute_query(self, query, params=None):
         """Execute a query on the ClickHouse database."""
         if self._conn is None:
-            logger.info("Client is not connected. Please call the connect method first.")
-            return None
+            logger.info("ClickHouse: Client is not connected. Please call the connect method first.")
+            raise ConnectionError("ClickHouse: Client is not connected")
         try:
             result = self._conn.query(query, parameters=params)
             return result
         except Exception as e:
-            logger.error(f"Error executing query: {e}")
-            return None
+            logger.error(f"ClickHouse: Error executing query: {e}")
+            raise ValueError("ClickHouse: Error executing query")
 
     def execute_no_return(self, query, params=None):
         """Execute a query that doesn't return results (e.g., INSERT)."""
         if self._conn is None:
-            logger.info("Client is not connected. Please call the connect method first.")
-            return None
+            logger.info("ClickHouse: Client is not connected. Please call the connect method first.")
+            raise ConnectionError("ClickHouse: Client is not connected")
         try:
             self._conn.command(query, parameters=params)
-            logger.info("Query executed successfully")
+            logger.info("ClickHouse: Query executed successfully")
         except Exception as e:
-            logger.error(f"Error executing query: {e}")
+            logger.error(f"ClickHouse: Error executing query: {e}")
+            raise ValueError("ClickHouse: Error executing query")
     
     def insert_data(self, table_name, data, columns):
         """
@@ -179,7 +183,7 @@ class ClickHouseConn:
         self.execute_query(insert_query)
 
         # print(f"query insert {insert_query}")
-        logger.info(f"Inserted {len(data)} rows into table {table_name}")
+        logger.info(f"ClickHouse: Inserted {len(data)} rows into table {table_name}")
 
     def update_data(self, table_name, update_fields, condition_fields):
         """
@@ -202,7 +206,7 @@ class ClickHouseConn:
         # Execute the insert query
         self.execute_query(query)
 
-        logger.info(query)
+        logger.info(f"ClickHouse: {query}")
 
     def insert_data_copy(self, table_name, select_into, columns):
         """
@@ -221,7 +225,7 @@ class ClickHouseConn:
         self.execute_query(insert_query)
 
         # print(f"query insert {insert_query}")
-        logger.info(f"Inserted into table {table_name}")
+        logger.info(f"ClickHouse: Inserted into table {table_name}")
     
     def select_and_count(self, table_name, columns="*", filters=None):
         """
@@ -298,8 +302,6 @@ class ClickHouseConn:
         # Add pagination using LIMIT and OFFSET
         if offset is not None:
             query += f" LIMIT {page_size} OFFSET {offset};"
-
-        logger.info(f"Kueri Kita {query}")
 
         # Execute the query and return results
         result = self.execute_query(query)
@@ -420,7 +422,7 @@ class ClickHouseConn:
 
 # Example usage:
 if __name__ == "__main__":
-    client = ClickHouseClient(
+    client = ClickHouseConn(
         host='172.1.0.21',
         port=9000,
         username='county',

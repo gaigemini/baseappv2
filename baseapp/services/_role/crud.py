@@ -1,18 +1,17 @@
 import logging,uuid
 
-from pymongo.errors import PyMongoError, DuplicateKeyError
+from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 
 from baseapp.config import setting, mongodb
-from baseapp.services._enum import model
-
+from baseapp.services._role import model
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
 
 class CRUD:
-    def __init__(self, collection_name="_enum"):
+    def __init__(self, collection_name="_role"):
         self.collection_name = collection_name
         self.logger = logging.getLogger()
 
@@ -33,27 +32,23 @@ class CRUD:
             user_agent=self.user_agent
         )
 
-    def create(self, data: model.Enum):
+    def create(self, data: model.Role):
         """
-        Insert a new enum into the collection.
+        Insert a new role into the collection.
         """
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
 
-            enum_data = data.model_dump()
-            enum_data["_id"] = data.id or str(uuid.uuid4())
-            del enum_data["id"]
+            role_data = data.model_dump()
+            role_data["_id"] = str(uuid.uuid4())
             try:
-                result = collection.insert_one(enum_data)
+                result = collection.insert_one(role_data)
                 self.logger.info(
-                    f"Enum created successfully.",
-                    extra={"data": enum_data},
+                    f"Role created successfully.",
+                    extra={"data": role_data},
                 )
-                return enum_data
-            except DuplicateKeyError as dke:
-                self.logger.error(f"Duplicate entry detected: {str(dke)}")
-                raise ValueError("A document with the same ID already exists.") from dke
+                return role_data
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while creating document.") from pme
@@ -61,37 +56,37 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
-    def get_by_id(self, enum_id: str):
+    def get_by_id(self, role_id: str):
         """
-        Retrieve a enum by ID.
+        Retrieve a role by ID.
         """
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                enum = collection.find_one({"_id": enum_id})
-                if not enum:
+                role = collection.find_one({"_id": role_id})
+                if not role:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="retrieve",
                         target=self.collection_name,
-                        target_id=enum_id,
-                        details={"_id": enum_id},
+                        target_id=role_id,
+                        details={"_id": role_id},
                         status="failure",
-                        error_message="Enum not found"
+                        error_message="Role not found"
                     )
-                    raise ValueError("Enum not found")
+                    raise ValueError("Role not found")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=enum_id,
-                    details={"_id": enum_id, "retrieved_enum": enum},
+                    target_id=role_id,
+                    details={"_id": role_id, "retrieved_enum": role},
                     status="success"
                 )
-                return enum
+                return role
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -99,8 +94,8 @@ class CRUD:
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=enum_id,
-                    details={"_id": enum_id},
+                    target_id=role_id,
+                    details={"_id": role_id},
                     status="failure",
                     error_message=str(pme)
                 )
@@ -109,94 +104,84 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
-    def update_by_id(self, enum_id: str, data: model.EnumUpdate):
+    def update_by_id(self, role_id: str, data: model.RoleUpdate):
         """
-        Update a enum's data by ID.
+        Update a role's data by ID.
         """
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
-            enum_data = data.model_dump()
+            role_data = data.model_dump()
             try:
-                update_enum = collection.find_one_and_update({"_id": enum_id}, {"$set": enum_data}, return_document=True)
-                if not update_enum:
+                update_role = collection.find_one_and_update({"_id": role_id}, {"$set": role_data}, return_document=True)
+                if not update_role:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="update",
                         target=self.collection_name,
-                        target_id=enum_id,
-                        details={"$set": enum_data},
+                        target_id=role_id,
+                        details={"$set": role_data},
                         status="failure",
                         error_message="Enum not found"
                     )
-                    raise ValueError("Enum not found")
-                self.logger.info(f"Enum {enum_id} updated successfully.")
+                    raise ValueError("Role not found")
+                self.logger.info(f"Role {role_id} updated successfully.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=enum_id,
-                    details={"$set": enum_data},
+                    target_id=role_id,
+                    details={"$set": role_data},
                     status="success"
                 )
-                return update_enum
+                return update_role
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
-                # write audit trail for fail
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=enum_id,
-                    details={"$set": enum_data},
-                    status="failure",
-                    error_message={str(pme)}
-                )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating enum: {str(e)}")
+                self.logger.exception(f"Error updating role: {str(e)}")
                 raise
 
-    def delete_by_id(self, enum_id: str):
+    def delete_by_id(self, role_id: str):
         """
-        Delete a enum by ID.
+        Delete a role by ID.
         """
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                result = collection.delete_one({"_id": enum_id})
+                result = collection.delete_one({"_id": role_id})
                 if result.deleted_count == 0:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="delete",
                         target=self.collection_name,
-                        target_id=enum_id,
+                        target_id=role_id,
                         status="failure",
                         error_message="No matching document found to delete."
                     )
                     raise ValueError("No matching document found to delete.")
-                self.logger.info(f"Document with ID {enum_id} deleted successfully.")
+                self.logger.info(f"Document with ID {role_id} deleted successfully.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="delete",
                     target=self.collection_name,
-                    target_id=enum_id,
+                    target_id=role_id,
                     status="success"
                 )
                 return result.deleted_count
             except PyMongoError as pme:
-                self.logger.error(f"Database error while deleting document with ID {enum_id}: {str(pme)}")
+                self.logger.error(f"Database error while deleting document with ID {role_id}: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="delete",
                     target=self.collection_name,
-                    target_id=enum_id,
+                    target_id=role_id,
                     status="failure",
                     error_message=str(pme)
                 )
@@ -223,14 +208,11 @@ class CRUD:
                 # Sorting
                 order = ASCENDING if sort_order == "asc" else DESCENDING
 
-                # Selected field
-                selected_fields={
+                # Selected fields
+                selected_fields = {
                     "id": "$_id",
-                    "app":1,
-                    "mod":1,
-                    "code":1,
-                    "type":1,
-                    "value":1,
+                    "color": 1,
+                    "name": 1,
                     "_id": 0
                 }
 
@@ -270,7 +252,7 @@ class CRUD:
                     },
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving enum with filters and pagination: {str(e)}")
+                self.logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,

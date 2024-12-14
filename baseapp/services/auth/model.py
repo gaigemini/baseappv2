@@ -1,6 +1,5 @@
-from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Union, Literal
+from pydantic import BaseModel, Field
+from typing import Optional
 
 class UserLoginModel(BaseModel):
     """Representation of a user login."""
@@ -9,10 +8,12 @@ class UserLoginModel(BaseModel):
     password: Optional[str] = Field(
         default=None, description="Password of the user.")
     
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    
 class UserInfo(BaseModel):
     """Representation of a user information."""
-    res_code: int = Field(description="Response code.")
-    res_message: Optional[str] = Field(default=None, description="Error message.")
     id: Optional[str] = Field(default=None, description="Id of the user.")
     org_id: Optional[str] = Field(default=None, description="Organization associated with the user.")
     roles: Optional[str] = Field(default=None, description="Roles of the user.")

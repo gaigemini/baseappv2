@@ -2,7 +2,7 @@ import logging,json,uuid,traceback
 
 from datetime import datetime,timezone
 
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
 from baseapp.config import setting, mongodb
 from baseapp.services._org import model
@@ -37,12 +37,12 @@ class CRUD:
                 # check owner is exist or not
                 owner_is_exist = collection.find_one({"authority":1})
                 if owner_is_exist:
-                    return {"status": 4, "message": "The owner already exists, and there is only one owner in the structure."}
+                    raise ValueError("The owner already exists, and there is only one owner in the structure.")
                 
                 # check owner user is exist or not
                 owner_user_is_exist = collection_user.find_one({"username":user_data["username"]})
                 if owner_user_is_exist:
-                    return {"status": 4, "message": "The owner user already exists, please fill other username or email."}
+                    raise ValueError("The owner user already exists, please fill other username or email.")
                 
                 # insert owner data to the table
                 result = collection.insert_one(org_data)
@@ -53,15 +53,18 @@ class CRUD:
                 init_role = self.init_role(org_data,role_data=obj_role)
 
                 # insert user data to the table
-                user_data["roles"] = init_role["data"]["_id"]
+                user_data["roles"] = init_role["_id"]
                 init_user = self.init_user(org_data, user_data)
-                return {"status": 0, "data": {"org":org_data,"user":init_user["data"]}}
+                return {"data": {"org":org_data,"user":init_user}}
             except DuplicateKeyError:
                 logger.error("Duplicate ID detected.")
-                return {"status": 4, "message": "the same ID already exists."}
+                raise ValueError("the same ID already exists.")
+            except PyMongoError as pme:
+                logger.error(f"Database error occurred: {str(pme)}")
+                raise ValueError("Database error occurred while init owner.") from pme
             except Exception as e:
-                logger.exception("Error creating owner.")
-                return {"status": 4, "message": str(e)}
+                logger.exception(f"Unexpected error occurred while init owner: {e}")
+                raise
             
     def init_role(self, org_data, role_data:model.Role):
         """
@@ -83,13 +86,13 @@ class CRUD:
             # trigger insert role on featuers
             self.init_role_in_feature(org_data,result.inserted_id)
 
-            return {"status": 0, "data": role_data}
-        except DuplicateKeyError:
-            logger.error("Duplicate Role ID detected.")
-            return {"status": 4, "message": "Role with the same ID already exists."}
+            return role_data
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred while init role of owner: {str(pme)}")
+            raise
         except Exception as e:
-            logger.exception("Error creating role.")
-            return {"status": 4, "message": str(e)}
+            logger.exception(f"Unexpected error occurred while init owner: {e}")
+            raise
 
     def init_role_in_feature(self, org_data, role_id):
         """
@@ -120,13 +123,13 @@ class CRUD:
             collection.insert_many(initial_data, ordered=False)
             logger.info(f"Inserted {len(initial_data)} documents into _featureonrole")
             
-            return {"status": 0, "data": initial_data}
-        except DuplicateKeyError:
-            logger.error("Duplicate User ID detected.")
-            return {"status": 4, "message": "Role with the same ID already exists."}
+            return initial_data
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred while init role feature of owner.: {str(pme)}")
+            raise
         except Exception as e:
-            logger.exception("Error creating role.")
-            return {"status": 4, "message": str(e)}
+            logger.exception(f"Unexpected error occurred while init owner: {e}")
+            raise
 
     def init_user(self, org_data, user_data):
         """
@@ -147,10 +150,10 @@ class CRUD:
         try:
             result = collection.insert_one(user_data)
             logger.info(f"User created with id: {result.inserted_id}")
-            return {"status": 0, "data": user_data}
-        except DuplicateKeyError:
-            logger.error("Duplicate User ID detected.")
-            return {"status": 4, "message": "User with the same ID already exists."}
+            return user_data
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred while init user of owner.: {str(pme)}")
+            raise
         except Exception as e:
-            logger.exception("Error creating User.")
-            return {"status": 4, "message": str(e)}
+            logger.exception(f"Unexpected error occurred while init user of owner: {e}")
+            raise

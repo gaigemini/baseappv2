@@ -1,12 +1,11 @@
 import cbor2,bcrypt,string,secrets,requests
 from fastapi.responses import Response
 
-from baseapp.config import setting
+from baseapp.config.setting import get_settings
 from baseapp.model.common import ApiResponse
+from baseapp.services._enum.crud import CRUD as EnumCrud
 
-from baseapp.services._enum.crud import CRUD
-
-config = setting.get_settings()
+config = get_settings()
 
 # Custom CBOR response class
 class CBORResponse(Response):
@@ -39,6 +38,9 @@ def get_enum(enum_id,use_api = False):
         except requests.RequestException as e:
             return {"error": f"API call failed: {str(e)}"}
     else:
-        _crud = CRUD()
+        _crud = EnumCrud()
         response = _crud.get_by_id(enum_id)
         return response["data"]
+    
+def is_none(variable, default_value):
+    return default_value if variable is None else variable

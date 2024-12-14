@@ -1,26 +1,38 @@
-import os,uuid,time
+import os
 
 from baseapp.config import setting, redis
 config = setting.get_settings()
 
-from json import dumps as jdumps, loads as jloads
-from cbor2 import dumps as cdumps, loads as cloads
+# from json import dumps as jdumps, loads as jloads
+# from cbor2 import dumps as cdumps, loads as cloads
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from baseapp.services.middleware import setup_middleware
 
 os.makedirs("log", exist_ok=True) # create log folder
 
 import logging.config
 logging.config.fileConfig('logging.conf')
-from logging import getLogger
+from logging import getLogger, LogRecord, setLogRecordFactory
 logger = getLogger()
+
+# class CustomLogRecord(LogRecord):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         if "data" not in self.__dict__:
+#             self.data = "N/A"  # Default value
+
+# setLogRecordFactory(CustomLogRecord)
 
 from baseapp.test_connection.api import router as testconn_router # test connection
 from baseapp.services.database.api import router as db_router # init database
 from baseapp.services._enum.api import router as enum_router # enum
 from baseapp.services._org.api import router as org_router # organization
 from baseapp.services.auth.api import router as auth_router # auth
+from baseapp.services.profile.api import router as profile_router # profile
+from baseapp.services._role.api import router as role_router # profile
 
 app = FastAPI(
     title="baseapp",
@@ -30,39 +42,15 @@ app = FastAPI(
 
 os.makedirs(config.file_location, exist_ok=True) # create folder data/files
 
+setup_middleware(app)
+
 app.include_router(testconn_router)
 app.include_router(db_router)
 app.include_router(enum_router)
 app.include_router(org_router)
 app.include_router(auth_router)
-
-@app.middleware("http")
-async def add_process_time_and_log(request: Request, call_next):
-    if "log_id" in request.headers:
-        log_id = request.headers.get("log_id")
-    else:
-        log_id = str(uuid.uuid4()).replace('-', '')
-    request.state.log_id = log_id
-
-    log_request = {
-        "log_id": log_id,
-        "method": request.method,
-        "url": request.url.path
-    }
-    logging.info(f"request: {log_request}")
-
-    start_time = time.time()
-    response = await call_next(request)
-
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    log_response = {
-        "log_id": log_id,
-        "process_time": str(process_time),
-        "http_status_code": response.status_code
-    }
-    logging.info(f"response: {log_response}")
-    return response
+app.include_router(profile_router)
+app.include_router(role_router)
 
 allowed_origins = [
     "https://gai.co.id",

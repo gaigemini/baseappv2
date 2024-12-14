@@ -15,10 +15,11 @@ class CurrentUser(BaseModel):
     name: str = Field(description="Content would be username or email or phonenumber")
     roles: str
     org_id: str
-    org_name: str
-    org_initial: str
-    org_ref_id: str
+    token: str
     authority: int
+    log_id: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent : Optional[str] = None
 
 class ApiResponse(BaseModel):
     """Representation of API response."""

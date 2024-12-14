@@ -9,8 +9,10 @@ class RedisConn:
         self.host = host or config.redis_host
         self.port = port or config.redis_port
         self.max_connections  = max_connections or config.redis_max_connections
+        self.pool = None
+        self._conn = None
 
-        # Inisialisasi Redis Connection Pool
+    def __enter__(self):
         try:
             self.pool = redis.ConnectionPool(
                 host=self.host,
@@ -20,20 +22,13 @@ class RedisConn:
             )
             self._conn = redis.Redis(connection_pool=self.pool)
             logger.info("Redis Connection Pool established.")
+            return self._conn
+        except redis.ConnectionError as e:
+            logger.error("Failed to initialize Redis Connection Pool: %s", e)
+            raise ConnectionError("Failed to initialize Redis Connection Pool") # Mengangkat kesalahan koneksi Redis
         except Exception as e:
-            logger.exception("Failed to initialize Redis Connection Pool: %s", e)
-            self.pool = None
-            self._conn = None
-    
-    def __enter__(self):
-        if self._conn:
-            try:
-                self._conn.ping()  # Tes koneksi
-                return self._conn
-            except Exception as e:
-                logger.exception("Redis connection error: %s", e)
-                return None
-        return None
+            logger.error(f"Unexpected error while initializing Redis: {e}")
+            raise  # Mengangkat kesalahan lainnya
     
     def get_connection(self):
         if not self._conn:
@@ -42,8 +37,16 @@ class RedisConn:
 
     def close(self):
         if self.pool:
-            self.pool.disconnect()
-            logger.info("Redis Connection Pool closed.")
+            try:
+                self.pool.disconnect()
+                logger.info("Redis Connection Pool closed.")
+            except Exception as e:
+                logger.error(f"Error while closing Redis Connection Pool: {e}")
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         self.close()
+        if exc_type:
+            logger.exception(
+                f"Error occurred in RedisConn: exc_type={exc_type}, exc_value={exc_value}, traceback={exc_traceback}"
+            )
+            return False  # Membiarkan pengecualian diteruskan keluar dari blok 'with'
