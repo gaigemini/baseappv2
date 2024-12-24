@@ -150,6 +150,10 @@ async def refresh_token(request: Request) -> ApiResponse:
         "expired_at": expired_at.isoformat()
     }
     return ApiResponse(status=0, data=data)
+
+@router.post("/forgot_password", response_model=ApiResponse)
+async def forgot_password() -> ApiResponse:
+    return ApiResponse(status=0, message="Coming soon")
     
 @router.post("/logout", response_model=ApiResponse)
 async def logout(request: Request, response: Response) -> ApiResponse:

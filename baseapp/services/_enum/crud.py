@@ -3,10 +3,10 @@ import logging,uuid
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
+from datetime import datetime, timezone
 
 from baseapp.config import setting, mongodb
 from baseapp.services._enum import model
-
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
@@ -41,16 +41,15 @@ class CRUD:
         with client as mongo:
             collection = mongo._db[self.collection_name]
 
-            enum_data = data.model_dump()
-            enum_data["_id"] = data.id or str(uuid.uuid4())
-            del enum_data["id"]
+            obj = data.model_dump()
+            obj["_id"] = data.id or str(uuid.uuid4())
+            obj["rec_by"] = self.user_id
+            obj["rec_date"] = datetime.now(timezone.utc)
+            obj["org_id"] = self.org_id
+            del obj["id"]
             try:
-                result = collection.insert_one(enum_data)
-                self.logger.info(
-                    f"Enum created successfully.",
-                    extra={"data": enum_data},
-                )
-                return enum_data
+                result = collection.insert_one(obj)
+                return obj
             except DuplicateKeyError as dke:
                 self.logger.error(f"Duplicate entry detected: {str(dke)}")
                 raise ValueError("A document with the same ID already exists.") from dke
@@ -116,9 +115,11 @@ class CRUD:
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
-            enum_data = data.model_dump()
+            obj = data.model_dump()
+            obj["mod_by"] = self.user_id
+            obj["mod_date"] = datetime.now(timezone.utc)
             try:
-                update_enum = collection.find_one_and_update({"_id": enum_id}, {"$set": enum_data}, return_document=True)
+                update_enum = collection.find_one_and_update({"_id": enum_id}, {"$set": obj}, return_document=True)
                 if not update_enum:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
@@ -126,19 +127,18 @@ class CRUD:
                         action="update",
                         target=self.collection_name,
                         target_id=enum_id,
-                        details={"$set": enum_data},
+                        details={"$set": obj},
                         status="failure",
                         error_message="Enum not found"
                     )
                     raise ValueError("Enum not found")
-                self.logger.info(f"Enum {enum_id} updated successfully.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=enum_id,
-                    details={"$set": enum_data},
+                    details={"$set": obj},
                     status="success"
                 )
                 return update_enum
@@ -150,9 +150,9 @@ class CRUD:
                     action="update",
                     target=self.collection_name,
                     target_id=enum_id,
-                    details={"$set": enum_data},
+                    details={"$set": obj},
                     status="failure",
-                    error_message={str(pme)}
+                    error_message=str(pme)
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
@@ -179,7 +179,6 @@ class CRUD:
                         error_message="No matching document found to delete."
                     )
                     raise ValueError("No matching document found to delete.")
-                self.logger.info(f"Document with ID {enum_id} deleted successfully.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,

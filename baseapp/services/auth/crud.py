@@ -38,7 +38,7 @@ class CRUD:
             logger.error(f"Password missing for user {user_info.get('username')}.")
             raise ValueError("User data is invalid.")
 
-        salt, claim_password = hash_password(password, usalt.encode("utf-8"))
+        salt, claim_password = hash_password(password, usalt)
 
         if not compare_digest(claim_password, hashed_password):
             logger.warning(f"User {user_info.get('username')} provided invalid password.")
@@ -74,17 +74,3 @@ class CRUD:
             user_data["authority"] = authority
 
             return self.validate_password(user_data, password)
-    
-    def is_valid_user(self, username: str) -> bool:
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.user_collection]
-            query = {"$or": [{"username": username}, {"email": username}]}
-            user_info = collection.find_one(query)
-            if not user_info:
-                logger.warning(f"User with username or email '{username}' not found.")
-                return False
-            if user_info.get("status") != Status.ACTIVE.value:
-                logger.warning(f"User {user_info.get('username')} is not active.")
-                return False
-            return True

@@ -32,7 +32,13 @@ from baseapp.services._enum.api import router as enum_router # enum
 from baseapp.services._org.api import router as org_router # organization
 from baseapp.services.auth.api import router as auth_router # auth
 from baseapp.services.profile.api import router as profile_router # profile
-from baseapp.services._role.api import router as role_router # profile
+from baseapp.services._role.api import router as role_router # role
+from baseapp.services._user.api import router as user_router # user
+from baseapp.services._dms.index_list.api import router as index_router # index dms
+from baseapp.services._dms.doc_type.api import router as doctype_router # doctype dms
+from baseapp.services._dms.upload.api import router as upload_router # upload dms
+from baseapp.services._dms.browse.api import router as browse_router # browse dms
+from baseapp.services._feature.api import router as feature_router # feature and role
 
 app = FastAPI(
     title="baseapp",
@@ -51,6 +57,12 @@ app.include_router(org_router)
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(role_router)
+app.include_router(user_router)
+app.include_router(index_router)
+app.include_router(doctype_router)
+app.include_router(upload_router)
+app.include_router(browse_router)
+app.include_router(feature_router)
 
 allowed_origins = [
     "https://gai.co.id",

@@ -1,7 +1,5 @@
 import logging,json,uuid,traceback
-
 from datetime import datetime,timezone
-
 from pymongo.errors import DuplicateKeyError, PyMongoError
 
 from baseapp.config import setting, mongodb
@@ -32,7 +30,6 @@ class CRUD:
 
             org_data["_id"] = str(uuid.uuid4())
             org_data["rec_date"] = datetime.now(timezone.utc)
-            org_data["mod_date"] = datetime.now(timezone.utc)
             try:
                 # check owner is exist or not
                 owner_is_exist = collection.find_one({"authority":1})
@@ -65,7 +62,51 @@ class CRUD:
             except Exception as e:
                 logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise
-            
+    
+    def init_partner_client_org(self, org_data: model.Organization, user_data: model.User):
+        """
+        Insert a new partner into the collection.
+        """
+        client = mongodb.MongoConn()
+        with client as mongo:
+            self.mongo = mongo
+
+            collection = mongo._db[self.collection_name]
+            collection_user = mongo._db["_user"]
+
+            org_data = org_data.model_dump()
+            user_data = user_data.model_dump()
+
+            org_data["_id"] = str(uuid.uuid4())
+            org_data["rec_date"] = datetime.now(timezone.utc)
+            try:
+                # check owner user is exist or not
+                owner_user_is_exist = collection_user.find_one({"username":user_data["username"]})
+                if owner_user_is_exist:
+                    raise ValueError("The partner user already exists, please fill other username or email.")
+                
+                # insert owner data to the table
+                result = collection.insert_one(org_data)
+                logger.info(f"Partner created with id: {result.inserted_id}")
+
+                # insert owner role data to the table
+                obj_role = model.Role(name="Admin",org_id=result.inserted_id)
+                init_role = self.init_role(org_data,role_data=obj_role)
+
+                # insert user data to the table
+                user_data["roles"] = init_role["_id"]
+                init_user = self.init_user(org_data, user_data)
+                return {"data": {"org":org_data,"user":init_user}}
+            except DuplicateKeyError:
+                logger.error("Duplicate ID detected.")
+                raise ValueError("the same ID already exists.")
+            except PyMongoError as pme:
+                logger.error(f"Database error occurred: {str(pme)}")
+                raise ValueError("Database error occurred while init partner.") from pme
+            except Exception as e:
+                logger.exception(f"Unexpected error occurred while init partner: {e}")
+                raise
+
     def init_role(self, org_data, role_data:model.Role):
         """
         Insert a new role into the collection.
@@ -103,7 +144,7 @@ class CRUD:
 
         try:
             # get enum bit of roleaction
-            bitRA = get_enum("ROLEACTION")
+            bitRA = get_enum(self.mongo,"ROLEACTION")
             totalBitRA = sum(bitRA["value"].values())
 
             # list of features

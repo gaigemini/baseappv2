@@ -6,13 +6,13 @@ from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
 from baseapp.config import setting, mongodb
-from baseapp.services._role.model import Role
+from baseapp.services._dms.index_list.model import IndexList, IndexListUpdate
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
 
 class CRUD:
-    def __init__(self, collection_name="_role"):
+    def __init__(self, collection_name="_dmsindexlist"):
         self.collection_name = collection_name
         self.logger = logging.getLogger()
 
@@ -33,9 +33,9 @@ class CRUD:
             user_agent=self.user_agent
         )
 
-    def create(self, data: Role):
+    def create(self, data: IndexList):
         """
-        Insert a new role into the collection.
+        Insert a new index name into the collection.
         """
         client = mongodb.MongoConn()
         with client as mongo:
@@ -56,37 +56,37 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
-    def get_by_id(self, role_id: str):
+    def get_by_id(self, index_id: str):
         """
-        Retrieve a role by ID.
+        Retrieve a index by ID.
         """
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                role = collection.find_one({"_id": role_id})
-                if not role:
+                obj = collection.find_one({"_id": index_id})
+                if not obj:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="retrieve",
                         target=self.collection_name,
-                        target_id=role_id,
-                        details={"_id": role_id},
+                        target_id=index_id,
+                        details={"_id": index_id},
                         status="failure",
-                        error_message="Role not found"
+                        error_message="Index not found"
                     )
-                    raise ValueError("Role not found")
+                    raise ValueError("Index not found")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=role_id,
-                    details={"_id": role_id, "retrieved_enum": role},
+                    target_id=index_id,
+                    details={"_id": index_id, "retrieved_index": obj},
                     status="success"
                 )
-                return role
+                return obj
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -94,8 +94,8 @@ class CRUD:
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=role_id,
-                    details={"_id": role_id},
+                    target_id=index_id,
+                    details={"_id": index_id},
                     status="failure",
                     error_message=str(pme)
                 )
@@ -104,9 +104,9 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
-    def update_by_id(self, role_id: str, data: Role):
+    def update_by_id(self, index_id: str, data: IndexListUpdate):
         """
-        Update a role's data by ID.
+        Update a index's data by ID.
         """
         client = mongodb.MongoConn()
         with client as mongo:
@@ -115,25 +115,25 @@ class CRUD:
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
             try:
-                update_role = collection.find_one_and_update({"_id": role_id}, {"$set": obj}, return_document=True)
+                update_role = collection.find_one_and_update({"_id": index_id}, {"$set": obj}, return_document=True)
                 if not update_role:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="update",
                         target=self.collection_name,
-                        target_id=role_id,
+                        target_id=index_id,
                         details={"$set": obj},
                         status="failure",
-                        error_message="Role not found"
+                        error_message="Index not found"
                     )
-                    raise ValueError("Role not found")
+                    raise ValueError("Index not found")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=role_id,
+                    target_id=index_id,
                     details={"$set": obj},
                     status="success"
                 )
@@ -145,7 +145,7 @@ class CRUD:
                     mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=role_id,
+                    target_id=index_id,
                     details={"$set": obj},
                     status="failure",
                     error_message=str(pme)
@@ -164,7 +164,15 @@ class CRUD:
             collection = mongo._db[self.collection_name]
             try:
                 # Apply filters
-                query_filter = filters or {}
+                query_filter = {}
+                if filters:
+                    for key, value in filters.items():
+                        if isinstance(value, str) and value.startswith("regex:"):
+                            # Extract regex pattern from value
+                            regex_pattern = value.split("regex:", 1)[1]
+                            query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
+                        else:
+                            query_filter[key] = value
 
                 # Pagination
                 skip = (page - 1) * per_page
@@ -176,8 +184,9 @@ class CRUD:
                 # Selected fields
                 selected_fields = {
                     "id": "$_id",
-                    "color": 1,
                     "name": 1,
+                    "description": 1,
+                    "type": 1,
                     "status": 1,
                     "_id": 0
                 }
@@ -218,7 +227,7 @@ class CRUD:
                     },
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
+                self.logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,

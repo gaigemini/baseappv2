@@ -5,9 +5,9 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
-from baseapp.model.common import CurrentUser
+from baseapp.config import mongodb
+from baseapp.model.common import CurrentUser, Status
 from baseapp.config.setting import get_settings
-from baseapp.services.auth.crud import CRUD as AuthCrud
 
 config = get_settings()
 jwt_secret_key = config.jwt_secret_key
@@ -41,6 +41,19 @@ def get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tok
             detail=message,
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    def is_valid_user(username: str) -> bool:
+        client = mongodb.MongoConn()
+        with client as mongo:
+            collection = mongo._db["_user"]
+            query = {"$or": [{"username": username}, {"email": username}]}
+            user_info = collection.find_one(query)
+            if not user_info:
+                return False
+            if user_info.get("status") != Status.ACTIVE.value:
+                return False
+            return True
+    
     try:
         credentials = decode_jwt_token(token)
     
@@ -54,7 +67,7 @@ def get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tok
         logging.error(error_message)
         raise credentials_exception(message="Could not validate credentials")
     
-    if not AuthCrud().is_valid_user(credentials["sub"]):
+    if not is_valid_user(credentials["sub"]):
         raise credentials_exception("Could not validate credentials")
 
     return CurrentUser(

@@ -1,9 +1,9 @@
-import cbor2,bcrypt,string,secrets,requests
+import cbor2,bcrypt,string,secrets
 from fastapi.responses import Response
+from pymongo.errors import PyMongoError
 
 from baseapp.config.setting import get_settings
 from baseapp.model.common import ApiResponse
-from baseapp.services._enum.crud import CRUD as EnumCrud
 
 config = get_settings()
 
@@ -27,20 +27,16 @@ def generate_password(length: int = 8):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(characters) for _ in range(length))
     return password
+ 
+def get_enum(mongo, enum_id):
+    collection = mongo._db["_enum"]
+    try:
+        enum = collection.find_one({"_id": enum_id})
+        return enum
+    except PyMongoError as pme:
+        raise ValueError("Database error occurred while find document.") from pme
+    except Exception as e:
+        raise
 
-def get_enum(enum_id,use_api = False):
-    if use_api:
-        try:
-            response = requests.get(f"{config.host}/enum/{enum_id}")
-            response.raise_for_status()  # Raise error jika HTTP status bukan 200
-            response = response.json()
-            return response["data"]
-        except requests.RequestException as e:
-            return {"error": f"API call failed: {str(e)}"}
-    else:
-        _crud = EnumCrud()
-        response = _crud.get_by_id(enum_id)
-        return response["data"]
-    
 def is_none(variable, default_value):
     return default_value if variable is None else variable
