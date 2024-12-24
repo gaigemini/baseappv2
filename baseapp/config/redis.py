@@ -4,11 +4,13 @@ from baseapp.config import setting
 logger = logging.getLogger()
 
 class RedisConn:
-    def __init__(self, host=None, port=None, max_connections=10):
+    def __init__(self, host=None, port=None, max_connections=10, retry_on_timeout=True, socket_timeout=5):
         config = setting.get_settings()
         self.host = host or config.redis_host
         self.port = port or config.redis_port
         self.max_connections  = max_connections or config.redis_max_connections
+        self.retry_on_timeout = retry_on_timeout
+        self.socket_timeout = socket_timeout
         self.pool = None
         self._conn = None
 
@@ -18,9 +20,13 @@ class RedisConn:
                 host=self.host,
                 port=self.port,
                 max_connections=self.max_connections,
-                decode_responses=True
+                decode_responses=True,
+                retry_on_timeout=self.retry_on_timeout,
+                socket_timeout=self.socket_timeout,
             )
             self._conn = redis.Redis(connection_pool=self.pool)
+            # Validate connection
+            self._conn.ping()
             logger.info("Redis Connection Pool established.")
             return self._conn
         except redis.ConnectionError as e:
