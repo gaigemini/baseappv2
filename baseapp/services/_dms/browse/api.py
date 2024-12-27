@@ -49,7 +49,7 @@ async def browse_by_key(
     )
     return ApiResponse(status=0, message="Data loaded", data=response["data"])
 
-@router.get("/explore/{pid}", response_model=ApiResponse)
+@router.get("/folder/{pid}", response_model=ApiResponse)
 async def list_folder(
         pid: str,
         cu: CurrentUser = Depends(get_current_user)
@@ -83,7 +83,7 @@ async def list_folder(
     )
     return ApiResponse(status=0, message="Data loaded", data=response["data"])
 
-@router.get("/folder/{folder_id}", response_model=PaginatedApiResponse)
+@router.get("/explore/{folder_id}", response_model=PaginatedApiResponse)
 async def list_file_by_folder_id(
         folder_id: str, 
         page: int = Query(1, ge=1, description="Page number"),

@@ -3,6 +3,8 @@ import os
 from baseapp.config import setting, redis
 config = setting.get_settings()
 
+from baseapp.model.common import OTP_BASE_KEY
+
 # from json import dumps as jdumps, loads as jloads
 # from cbor2 import dumps as cdumps, loads as cloads
 
@@ -15,16 +17,8 @@ os.makedirs("log", exist_ok=True) # create log folder
 
 import logging.config
 logging.config.fileConfig('logging.conf')
-from logging import getLogger, LogRecord, setLogRecordFactory
+from logging import getLogger
 logger = getLogger()
-
-# class CustomLogRecord(LogRecord):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         if "data" not in self.__dict__:
-#             self.data = "N/A"  # Default value
-
-# setLogRecordFactory(CustomLogRecord)
 
 from baseapp.test_connection.api import router as testconn_router # test connection
 from baseapp.services.database.api import router as db_router # init database
@@ -39,6 +33,17 @@ from baseapp.services._dms.doc_type.api import router as doctype_router # doctyp
 from baseapp.services._dms.upload.api import router as upload_router # upload dms
 from baseapp.services._dms.browse.api import router as browse_router # browse dms
 from baseapp.services._feature.api import router as feature_router # feature and role
+from baseapp.services._forgot_password.api import router as forgot_password_router # forgot password
+
+from baseapp.services.redis_queue import RedisQueueManager
+from baseapp.services.redis_worker import RedisWorker
+
+# Redis connection and queue configuration
+queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
+
+# Worker setup
+worker = RedisWorker(queue_manager)
+worker.start()
 
 app = FastAPI(
     title="baseapp",
@@ -63,6 +68,7 @@ app.include_router(doctype_router)
 app.include_router(upload_router)
 app.include_router(browse_router)
 app.include_router(feature_router)
+app.include_router(forgot_password_router)
 
 allowed_origins = [
     "https://gai.co.id",

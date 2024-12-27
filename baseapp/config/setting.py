@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     minio_bucket: str
     minio_verify: bool = True
 
+    # smtp
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: str
+
     file_location: str
 
     # Determine the env file based on the ENV environment variable

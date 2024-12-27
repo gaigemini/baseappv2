@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
-from baseapp.model.common import Status
+from baseapp.model.common import Status, OTP_BASE_KEY
 from baseapp.config import setting, mongodb
 from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateStatus, UpdateRoles, UpdateByAdmin, ChangePassword
 

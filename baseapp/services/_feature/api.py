@@ -17,7 +17,7 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_feature", tags=["Feature"])
 
 @router.put("/update", response_model=ApiResponse)
-async def update_by_id(req: Feature, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_feature_permission(req: Feature, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_feature", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -32,7 +32,7 @@ async def update_by_id(req: Feature, cu: CurrentUser = Depends(get_current_user)
     return ApiResponse(status=0, message="Data updated", data=response)
     
 @router.get("/list/{role_id}", response_model=ApiResponse)
-async def find_by_id(role_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def find_by_role_id(role_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_feature", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
     

@@ -140,4 +140,3 @@ async def find_by_id(user_id: str, cu: CurrentUser = Depends(get_current_user)) 
     )
     response = _crud.get_by_id(user_id)
     return ApiResponse(status=0, message="Data found", data=response)
-

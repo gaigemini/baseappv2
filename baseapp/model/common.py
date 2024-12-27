@@ -3,6 +3,8 @@ from typing import Optional, Any, Literal
 from enum import Enum
 from datetime import datetime, timezone
 
+OTP_BASE_KEY: str = "otp_key"
+
 class Status(str, Enum):
     """Status of a user and client"""
     ACTIVE = "ACTIVE"

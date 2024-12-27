@@ -2,8 +2,9 @@ import logging
 from hmac import compare_digest
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo
-from baseapp.model.common import Status
+from baseapp.model.common import Status, OTP_BASE_KEY
 from baseapp.utils.utility import hash_password
+from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -13,6 +14,7 @@ class CRUD:
         self.user_collection = "_user"
         self.org_collection = "_organization"
         self.mongo = None
+        self.queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)  # Pass actual RedisConn here
 
     def check_org(self, org_id) -> int:
         collection = self.mongo._db[self.org_collection]

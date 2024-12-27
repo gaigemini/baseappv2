@@ -8,7 +8,7 @@ class User(BaseModel):
     username: str = Field(description="User name use for login.", error_msg_templates={"value_error.missing": "Username is required!"})
     email: str = Field(description="Email of the user.", error_msg_templates={"value_error.missing": "Email cannot be empty"})
     password: str = Field(description="Password of the user.")
-    salt: Optional[str] = Field(default=None, description="Random string added to password for strengthening.")
+    # salt: Optional[str] = Field(default=None, description="Random string added to password for strengthening.")
     roles: List[str] = Field(description="Roles of the user")
     status: Optional[Status] = Field(default=None, description="Status of the user.")
 
