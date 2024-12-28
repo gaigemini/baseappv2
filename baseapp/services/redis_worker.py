@@ -4,22 +4,29 @@ from threading import Thread
 import logging
 logger = logging.getLogger()
 
+from baseapp.services.mail_manager import MailManager
 from baseapp.services.redis_queue import RedisQueueManager
 
 class RedisWorker:
     def __init__(self,redis_queue_manager: RedisQueueManager):
         self.queue_manager = redis_queue_manager
+        self.mail_manager = MailManager()
         self.is_running = False
 
     def process_task(self, task: dict):
         """
         Process a task (e.g., send OTP).
         """
-        phone_number = task.get("phone_number")
-        otp = task.get("otp")
-        logger.info(f"Processing task: Sending OTP {otp} to {phone_number}")
-        time.sleep(3)  # Simulate sending OTP
-        logger.info(f"Task completed: OTP {otp} sent to {phone_number}")
+        func = task.get("func")
+        if func == "mail_manager":
+            email = task.get("email")
+            otp = task.get("otp")
+            logger.info(f"Processing task: Sending OTP {otp} to {email}")
+            time.sleep(3)  # Simulate sending OTP
+            self.mail_manager.send_mail(task)
+            logger.info(f"Task completed: OTP {otp} sent to {email}")
+        else:
+            logger.info("Other task")
 
     def worker_loop(self):
         """

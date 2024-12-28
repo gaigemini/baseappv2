@@ -86,3 +86,10 @@ app.add_middleware(
 @app.get("/v1/test")
 def read_root():
     return "ok"
+
+@app.on_event("shutdown")
+def shutdown_worker():
+    """
+    Gracefully stop the worker on server shutdown.
+    """
+    worker.stop()

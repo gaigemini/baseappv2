@@ -18,7 +18,7 @@ class CRUD:
         self.logger = logging.getLogger()
         self.redis_conn = RedisConn()
         self.queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)  # Pass actual RedisConn here
-        self.mail_manager = email_smtp.EmailSender()
+        # self.mail_manager = email_smtp.EmailSender()
 
     def is_valid_user(self,username: str) -> bool:
         client = mongodb.MongoConn()
@@ -42,20 +42,20 @@ class CRUD:
             
             otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
 
-            msg_val = {
-                "to":req.email, # mandatory | kalau lebih dari satu jadi array ["aldian@gai.co.id","charly@gai.co.id"]
-                "subject": "Request Forgot Password",
-                "body_mail": f"Berikut kode OTP Anda: {otp}"
-            }
+            # msg_val = {
+            #     "to":req.email, # mandatory | kalau lebih dari satu jadi array ["aldian@gai.co.id","charly@gai.co.id"]
+            #     "subject": "Request Forgot Password",
+            #     "body_mail": f"Berikut kode OTP Anda: {otp}"
+            # }
 
-            body_mail, bcc_recipients = self.mail_manager.body_msg(msg_val)
-            mail_sending = self.mail_manager.send_email(body_mail, bcc_recipients)
+            # body_mail, bcc_recipients = self.mail_manager.body_msg(msg_val)
+            # mail_sending = self.mail_manager.send_email(body_mail, bcc_recipients)
 
             # Simpan OTP di Redis dengan TTL (misalnya 300 detik)
             with self.redis_conn as conn:
                 conn.setex(f"otp:{req.email}", 300, otp)
 
-            self.queue_manager.enqueue_task({"email": req.email, "otp": otp})
+            self.queue_manager.enqueue_task({"func":"mail_manager","email": req.email, "otp": otp})
             return {"status": "queued", "message": "OTP has been sent"}
         except Exception as e:
             raise
