@@ -72,6 +72,7 @@ class CRUD:
             if stored_otp and stored_otp == req.otp:
                 reset_token = str(uuid.uuid4())  # Use UUID for secure random token
                 with self.redis_conn as conn:
+                    conn.delete(f"otp:{req.email}")
                     conn.setex(f"reset_token:{req.email}", 900, reset_token)  # TTL: 15 minutes
                 
                 return {"status": "verified", "message": "OTP verified", "reset_token": reset_token}            

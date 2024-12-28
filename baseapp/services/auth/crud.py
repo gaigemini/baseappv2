@@ -4,7 +4,6 @@ from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo
 from baseapp.model.common import Status, OTP_BASE_KEY
 from baseapp.utils.utility import hash_password
-from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -13,8 +12,16 @@ class CRUD:
     def __init__(self):
         self.user_collection = "_user"
         self.org_collection = "_organization"
-        self.mongo = None
-        self.queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)  # Pass actual RedisConn here
+        self.mongo = mongodb.MongoConn()  # Inisialisasi MongoDB di sini
+
+    def __enter__(self):
+        # Membuka koneksi saat memasuki konteks
+        self.mongo.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Menutup koneksi saat keluar dari konteks
+        self.mongo.__exit__(exc_type, exc_value, traceback)
 
     def check_org(self, org_id) -> int:
         collection = self.mongo._db[self.org_collection]
@@ -63,16 +70,13 @@ class CRUD:
         return user_info
     
     def validate_user(self, username, password) -> UserInfo:
-        client = mongodb.MongoConn()
-        with client as mongo:
-            self.mongo = mongo
-            user_info = self.find_user(username)
-            authority = self.check_org(user_info["org_id"])
+        user_info = self.find_user(username)
+        authority = self.check_org(user_info["org_id"])
 
-            user_data = {
-                key: user_info.get(key, None)
-                for key in ["_id", "username", "org_id", "password", "salt", "roles", "status"]
-            }
-            user_data["authority"] = authority
+        user_data = {
+            key: user_info.get(key, None)
+            for key in ["_id", "username", "org_id", "password", "salt", "roles", "status"]
+        }
+        user_data["authority"] = authority
 
-            return self.validate_password(user_data, password)
+        return self.validate_password(user_data, password)

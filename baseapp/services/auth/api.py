@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Request, Response, Form
 from datetime import datetime, timezone, timedelta
 import logging
+import random
 
-from baseapp.model.common import ApiResponse
+from baseapp.model.common import ApiResponse, OTP_BASE_KEY
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
+from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token
-from baseapp.services.auth.model import TokenResponse, UserLoginModel
+from baseapp.services.auth.model import TokenResponse, UserLoginModel, VerifyOTPRequest
 from baseapp.services.auth.crud import CRUD
 # from baseapp.utils.utility import get_response_based_on_env
 
@@ -21,7 +23,9 @@ async def login(response: Response, ctx: Request, req: UserLoginModel) -> ApiRes
     password = req.password
 
     # Validasi user
-    user_info = _crud.validate_user(username, password)
+    with _crud:
+        user_info = _crud.validate_user(username, password)
+
     logger.debug(f"User info: {user_info}")
 
     # Data token
@@ -66,6 +70,88 @@ async def login(response: Response, ctx: Request, req: UserLoginModel) -> ApiRes
     return ApiResponse(status=0, data=data)
     # return get_response_based_on_env(ApiResponse(status=0, data=data), app_env=config.app_env)
 
+@router.post("/request-otp", response_model=ApiResponse)
+async def request_otp(req: UserLoginModel) -> ApiResponse:
+    username = req.username
+    password = req.password
+
+    # Validasi user
+    with _crud:
+        user_info = _crud.validate_user(username, password)
+    logger.debug(f"User info: {user_info}")
+
+    otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
+
+    # Simpan refresh token ke Redis
+    with RedisConn() as redis_conn:
+        redis_conn.setex(f"otp:{username}", 300, otp)
+    
+    queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
+    queue_manager.enqueue_task({"func":"mail_manager","email": username, "otp": otp})
+
+    # Return response berhasil
+    return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
+
+@router.post("/verify-otp", response_model=ApiResponse)
+async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
+    username = req.username
+    otp = req.otp
+
+    # Validasi user
+    with _crud:
+        user_info = _crud.find_user(username)
+    logger.debug(f"User info: {user_info}")
+
+    # Simpan refresh token ke Redis
+    with RedisConn() as redis_conn:
+        stored_otp = redis_conn.get(f"otp:{username}")
+        logger.debug(f"ini otp nya : {stored_otp}")
+        if stored_otp and stored_otp == otp:
+            # Data token
+            token_data = {
+                "sub": username,
+                "id": user_info.get("id"),
+                "roles": user_info.get("roles"),
+                "authority": user_info.get("authority"),
+                "org_id": user_info.get("org_id"),
+            }
+
+            # Buat akses token dan refresh token
+            access_token, expire_access_in = create_access_token(token_data)
+            refresh_token, expire_refresh_in = create_refresh_token(token_data)
+
+            # Simpan refresh token ke Redis
+            redis_conn.set(
+                username,
+                refresh_token,
+                ex=timedelta(days=expire_refresh_in),
+            )
+
+            # hapus otp dari redis
+            redis_conn.delete(f"otp:{username}")
+
+            # Hitung waktu kedaluwarsa akses token
+            expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+            data = {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "expired_at": expired_at.isoformat(),
+            }
+
+            # Atur cookie refresh token
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                httponly=True,
+                secure=config.app_env == "production",  # Gunakan secure hanya di production
+                samesite="Strict",  # Prevent CSRF
+            )
+    
+            # Return response berhasil
+            return ApiResponse(status=0, data=data)
+        else:
+            raise ValueError("Invalid or expired OTP")
+
 @router.post("/token", response_model=TokenResponse)
 async def token(
     response: Response,
@@ -74,7 +160,8 @@ async def token(
     password: str = Form(...),
 ) -> TokenResponse:
     # Validasi user
-    user_info = _crud.validate_user(username, password)
+    with _crud:
+        user_info = _crud.validate_user(username, password)
     logger.debug(f"User info: {user_info}")
 
     # Data token

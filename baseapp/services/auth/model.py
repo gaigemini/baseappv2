@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
 
 class UserLoginModel(BaseModel):
@@ -18,3 +18,7 @@ class UserInfo(BaseModel):
     org_id: Optional[str] = Field(default=None, description="Organization associated with the user.")
     roles: List[str] = Field(description="Roles of the user")
     authority: Optional[int] = Field(default=None, description="Authorization of the organization associated with the user, as owner or client.")
+
+class VerifyOTPRequest(BaseModel):
+    username: str = Field(description="Email")
+    otp: str = Field(description="OTP Code.")
