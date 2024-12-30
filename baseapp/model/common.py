@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Literal
+from typing import Optional, Any, Literal, List
 from enum import Enum
 from datetime import datetime, timezone
 
@@ -15,7 +15,7 @@ class CurrentUser(BaseModel):
     """current user"""
     id: str
     name: str = Field(description="Content would be username or email or phonenumber")
-    roles: str
+    roles: List
     org_id: str
     token: str
     authority: int

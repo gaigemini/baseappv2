@@ -78,7 +78,17 @@ class CRUD:
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                user = collection.find_one({"_id": user_id})
+                # Selected field
+                selected_fields={
+                    "id": "$_id",
+                    "username":1,
+                    "email":1,
+                    "roles":1,
+                    "status":1,
+                    "org_id":1,
+                    "_id": 0
+                }
+                user = collection.find_one({"_id": user_id},selected_fields)
                 if not user:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(

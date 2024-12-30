@@ -1,4 +1,5 @@
 from pymongo.errors import PyMongoError
+from typing import List
 
 from baseapp.config import setting, mongodb
 
@@ -8,7 +9,7 @@ class PermissionChecker:
     def __init__(self, permissions_collection="_featureonrole"):
         self.permissions_collection = permissions_collection
 
-    def has_permission(self, roles: str, f_id: str, required_permission: int) -> bool:
+    def has_permission(self, roles: List, f_id: str, required_permission: int) -> bool:
         """
         Memeriksa apakah salah satu role pengguna memiliki izin yang diperlukan.
 
@@ -20,11 +21,9 @@ class PermissionChecker:
         client = mongodb.MongoConn()
         with client as mongo:
             collection = mongo._db[self.permissions_collection]
-            # Pecah role string menjadi list
-            role_list = roles.split(",")
             try:               
                 # Cari semua role yang relevan di database
-                permissions = collection.find({"r_id": {"$in": role_list}, "f_id": f_id})
+                permissions = collection.find({"r_id": {"$in": roles}, "f_id": f_id})
 
                 for permission in permissions:
                     # Cek izin menggunakan bitwise AND
