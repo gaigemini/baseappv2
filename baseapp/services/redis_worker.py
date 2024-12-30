@@ -18,7 +18,7 @@ class RedisWorker:
         Process a task (e.g., send OTP).
         """
         func = task.get("func")
-        if func == "mail_manager":
+        if func == "otp":
             email = task.get("email")
             otp = task.get("otp")
             logger.info(f"Processing task: Sending OTP {otp} to {email}")

@@ -55,7 +55,7 @@ class CRUD:
             with self.redis_conn as conn:
                 conn.setex(f"otp:{req.email}", 300, otp)
 
-            self.queue_manager.enqueue_task({"func":"mail_manager","email": req.email, "otp": otp})
+            self.queue_manager.enqueue_task({"func":"otp","email": req.email, "otp": otp})
             return {"status": "queued", "message": "OTP has been sent"}
         except Exception as e:
             raise

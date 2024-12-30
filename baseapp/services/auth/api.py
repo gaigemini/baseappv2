@@ -18,7 +18,7 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
-async def login(response: Response, ctx: Request, req: UserLoginModel) -> ApiResponse:
+async def login(response: Response, req: UserLoginModel) -> ApiResponse:
     username = req.username
     password = req.password
 
@@ -87,7 +87,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
     queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
-    queue_manager.enqueue_task({"func":"mail_manager","email": username, "otp": otp})
+    queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp})
 
     # Return response berhasil
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
