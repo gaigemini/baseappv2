@@ -54,3 +54,7 @@ class PaginatedApiResponse(ApiResponse):
     """API response with paginated data."""
     pagination: Optional[Pagination] = Field(
         default=None, description="Pagination details if applicable.")
+    
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str

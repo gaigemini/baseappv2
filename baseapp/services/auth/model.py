@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 class UserLoginModel(BaseModel):
@@ -7,10 +7,6 @@ class UserLoginModel(BaseModel):
         default=None, description="User name use for login.")
     password: Optional[str] = Field(
         default=None, description="Password of the user.")
-    
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
     
 class UserInfo(BaseModel):
     """Representation of a user information."""

@@ -3,14 +3,13 @@ from datetime import datetime, timezone, timedelta
 import logging
 import random
 
-from baseapp.model.common import ApiResponse, OTP_BASE_KEY
+from baseapp.model.common import ApiResponse, OTP_BASE_KEY, TokenResponse
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token
-from baseapp.services.auth.model import TokenResponse, UserLoginModel, VerifyOTPRequest
+from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
 from baseapp.services.auth.crud import CRUD
-# from baseapp.utils.utility import get_response_based_on_env
 
 config = get_settings()
 _crud = CRUD()
@@ -68,7 +67,6 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
 
     # Return response berhasil
     return ApiResponse(status=0, data=data)
-    # return get_response_based_on_env(ApiResponse(status=0, data=data), app_env=config.app_env)
 
 @router.post("/request-otp", response_model=ApiResponse)
 async def request_otp(req: UserLoginModel) -> ApiResponse:
@@ -87,7 +85,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
     queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
-    queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp})
+    queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
 
     # Return response berhasil
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
@@ -187,11 +185,6 @@ async def token(
 
     # Hitung waktu kedaluwarsa akses token
     expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
-    data = {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "expired_at": expired_at.isoformat(),
-    }
 
     # Atur cookie refresh token
     response.set_cookie(

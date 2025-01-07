@@ -2,7 +2,7 @@ import logging, random, uuid
 from datetime import datetime, timezone
 
 from baseapp.model.common import OTP_BASE_KEY, Status
-from baseapp.config import setting, mongodb, email_smtp
+from baseapp.config import setting, mongodb
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services._forgot_password.model import OTPRequest, VerifyOTPRequest, ResetPasswordRequest
@@ -18,7 +18,6 @@ class CRUD:
         self.logger = logging.getLogger()
         self.redis_conn = RedisConn()
         self.queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)  # Pass actual RedisConn here
-        # self.mail_manager = email_smtp.EmailSender()
 
     def is_valid_user(self,username: str) -> bool:
         client = mongodb.MongoConn()
@@ -55,7 +54,7 @@ class CRUD:
             with self.redis_conn as conn:
                 conn.setex(f"otp:{req.email}", 300, otp)
 
-            self.queue_manager.enqueue_task({"func":"otp","email": req.email, "otp": otp})
+            self.queue_manager.enqueue_task({"func":"otp","email": req.email, "otp": otp, "subject":"Request Forgot Password", "body":f"Berikut kode OTP Anda: {otp}"})
             return {"status": "queued", "message": "OTP has been sent"}
         except Exception as e:
             raise

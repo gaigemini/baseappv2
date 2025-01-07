@@ -18,10 +18,12 @@ async def init_database() -> ApiResponse:
     try:
         initDB = crud.init_database()
         response = ApiResponse(status=0, data=not initDB)
-        return get_response_based_on_env(response, app_env=config.app_env)
+        return response
+        # return get_response_based_on_env(response, app_env=config.app_env)
     except Exception as err:
         error_message = f"baseapp.services.database.api {err=}, {type(err)=}"
         logger.error(err, stack_info=True)
         response = ApiResponse(status=4, message=error_message)
-        return get_response_based_on_env(response, app_env=config.app_env)
+        return response
+        # return get_response_based_on_env(response, app_env=config.app_env)
 
