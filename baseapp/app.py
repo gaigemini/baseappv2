@@ -1,6 +1,7 @@
 import os
+# from fastapi.openapi.utils import get_openapi
 
-from baseapp.config import setting, redis
+from baseapp.config import setting
 config = setting.get_settings()
 
 from baseapp.model.common import OTP_BASE_KEY
@@ -50,6 +51,32 @@ app = FastAPI(
     description="Gateway for baseapp implementation.",
     version="0.0.1",
 )
+
+# def custom_openapi():
+#     if app.openapi_schema:
+#         return app.openapi_schema
+
+#     openapi_schema = get_openapi(
+#         title="Your API Title",
+#         version="1.0.0",
+#         description="Your API Description",
+#         routes=app.routes,
+#     )
+
+#     # Tambahkan dukungan untuk CBOR hanya jika schema JSON ada
+#     for path, methods in openapi_schema["paths"].items():
+#         for method, details in methods.items():
+#             if "requestBody" in details:
+#                 json_schema = details["requestBody"]["content"].get("application/json")
+#                 if json_schema:  # Periksa apakah "application/json" ada
+#                     details["requestBody"]["content"]["application/cbor"] = {
+#                         "schema": json_schema["schema"]
+#                     }
+
+#     app.openapi_schema = openapi_schema
+#     return app.openapi_schema
+
+# app.openapi = custom_openapi
 
 os.makedirs(config.file_location, exist_ok=True) # create folder data/files
 

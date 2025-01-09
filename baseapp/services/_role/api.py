@@ -14,10 +14,16 @@ _crud = CRUD()
 from baseapp.services.permission_check_service import PermissionChecker
 permission_checker = PermissionChecker()
 
+from baseapp.utils.utility import cbor_or_json
+
 router = APIRouter(prefix="/v1/_role", tags=["Role"])
 
 @router.post("/create", response_model=ApiResponse)
-async def create(req: Role, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def create(
+    req: Role, 
+    cu: CurrentUser = Depends(get_current_user)
+) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
 
@@ -32,6 +38,7 @@ async def create(req: Role, cu: CurrentUser = Depends(get_current_user)) -> ApiR
     return ApiResponse(status=0, message="Data created", data=response)
     
 @router.put("/update/{role_id}", response_model=ApiResponse)
+@cbor_or_json
 async def update_by_id(role_id: str, req: Role, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
@@ -46,6 +53,7 @@ async def update_by_id(role_id: str, req: Role, cu: CurrentUser = Depends(get_cu
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.get("", response_model=PaginatedApiResponse)
+@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -86,6 +94,7 @@ async def get_all_data(
     return PaginatedApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{role_id}", response_model=ApiResponse)
+@cbor_or_json
 async def find_by_id(role_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")

@@ -1,47 +1,54 @@
-import logging,uuid,time
-from fastapi import Request, FastAPI
-from fastapi.responses import JSONResponse
+import logging,uuid,time,cbor2
+from fastapi import Request, FastAPI, HTTPException
+from fastapi.responses import JSONResponse, Response
 
 from baseapp.config import setting
 from baseapp.model.common import ApiResponse
 
-# from baseapp.utils.utility import get_response_based_on_env
+from baseapp.utils.utility import get_response_based_on_env
 
 config = setting.get_settings()
 logger = logging.getLogger()
 
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if config.app_env == "production":
+        error_response = {
+            "status": exc.status_code,
+            "message": exc.detail
+        }
+        cbor_content = cbor2.dumps(error_response)
+        return Response(content=cbor_content, media_type="application/cbor", status_code=exc.status_code)
+    else:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    
 async def handle_exceptions(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
     except ValueError as ve:
         # Untuk kesalahan validasi user input
-        return JSONResponse(
-            content=ApiResponse(status=4, message=str(ve)).model_dump(),
-            status_code=400,  # Bad Request
-        )
+        content = ApiResponse(status=4, message=str(ve))
+        return get_response_based_on_env(content,status_code=400)
     except ConnectionError as ce:
         # Untuk kesalahan koneksi ke layanan eksternal
-        return JSONResponse(
-            content=ApiResponse(status=4, message=str(ce)).model_dump(),
-            status_code=500,  # Internal Server Error
-        )
+        content = ApiResponse(status=4, message=str(ce))
+        return get_response_based_on_env(content, status_code=500)
     except PermissionError as pe:
         # Untuk kesalahan otorisasi
         logger.warning(f"Access denied: {str(pe)}")
-        return JSONResponse(
-            content=ApiResponse(status=4, message="Access denied.").model_dump(),
-            status_code=403,  # Forbidden
-        )
+        content = ApiResponse(status=4, message="Access denied.")
+        return get_response_based_on_env(content, status_code=403)
     except Exception as e:
         # Untuk semua kesalahan lainnya
         logger.exception(f"Unhandled error: {str(e)}")
-        return JSONResponse(
-            content=ApiResponse(
-                status=4, message="An unexpected error occurred. Please try again later."
-            ).model_dump(),
-            status_code=500,  # Internal Server Error
+        content = ApiResponse(
+            status=4,
+            message="An unexpected error occurred. Please try again later."
         )
+        return get_response_based_on_env(content, status_code=500)       
     
 async def add_process_time_and_log(request: Request, call_next):
     if "log_id" in request.headers:
@@ -73,3 +80,4 @@ async def add_process_time_and_log(request: Request, call_next):
 def setup_middleware(app: FastAPI):
     app.middleware("http")(handle_exceptions)
     app.middleware("http")(add_process_time_and_log)
+    app.add_exception_handler(HTTPException, http_exception_handler)
