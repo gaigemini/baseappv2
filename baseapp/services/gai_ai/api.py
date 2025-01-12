@@ -1,13 +1,14 @@
 from fastapi import APIRouter
-import requests, json
-from pymongo.errors import PyMongoError, DuplicateKeyError
+import requests, json, logging
+from pymongo.errors import PyMongoError
 
 from baseapp.model.common import ApiResponse
 
 from baseapp.config import setting, mongodb
 config = setting.get_settings()
 
-import logging, httpx
+from baseapp.services.gai_ai.model import Prompt
+
 logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/ai", tags=["AI"])
@@ -96,8 +97,8 @@ def extract_query_and_explanation(api_response):
 
     return json_query, explanation
 
-@router.get("/test", response_model=ApiResponse)
-async def test_ai() -> ApiResponse:
+@router.post("/test", response_model=ApiResponse)
+async def test_ai(req: Prompt) -> ApiResponse:
     list_ollama_models()
     
     # Pilih model yang akan digunakan
@@ -138,10 +139,11 @@ async def test_ai() -> ApiResponse:
         ("name", "string", "The name of the medicine."),
         ("satuan", "string", "The unit of the medicine (e.g., bottle).")
     ]
-    user_query = "Find all medicines containing 'Paracetamol' as an active ingredient and sort them by their name in ascending order"
+    user_query = req.prompt
+    # user_query = "make a prescription for headache medication"
+    # user_query = "Find all medicines containing 'Paracetamol' as an active ingredient and sort them by their name in ascending order and limit 10 record"
     # user_query = "Find all medicines categorized as 'Antiseptik' but exclude those with 'Hipersensitivitas' in their contraindications. Sort the results by their code in descending order."
-    # user_query = "Find all medicines indicated for 'fever' with a dosage containing '1 tablet every 8 hours'. Sort the results by creation date in descending order."
-    # user_query = "Find all active users above 25 years old and sort them by their creation date in descending order."
+    # user_query = "Find all medicines indicated for 'fever' with a dosage containing '1 tablet every 8 hours'. Sort the results by name in ascending order. Limit 5 record."
     
     prompt = generate_prompt(collection_name, fields, user_query)
 
