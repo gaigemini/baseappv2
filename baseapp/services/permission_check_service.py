@@ -13,7 +13,7 @@ class PermissionChecker:
         """
         Memeriksa apakah salah satu role pengguna memiliki izin yang diperlukan.
 
-        :param roles: String role, misalnya "role1,role2".
+        :param roles: Array role, misalnya ["role1","role2"].
         :param f_id: ID fitur/entitas yang diperiksa (contoh: "_enum").
         :param required_permission: Izin yang dibutuhkan (contoh: 1 untuk read).
         :return: True jika salah satu role memiliki izin, False jika tidak.

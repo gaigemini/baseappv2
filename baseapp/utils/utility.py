@@ -5,6 +5,7 @@ from fastapi import Response, Request
 from pydantic import BaseModel, ValidationError
 from functools import wraps
 from datetime import datetime, timezone
+from typing import Any
 
 from baseapp.config.setting import get_settings
 from baseapp.model.common import ApiResponse, PaginatedApiResponse, TokenResponse
@@ -20,11 +21,10 @@ class CBORResponse(Response):
             content = process_mongodb_data(content.model_dump())
             cbor_content = cbor2.dumps(content)
         else:
-            raise ValueError("Content must be an instance of ApiResponse or PaginatedApiResponse.")
+            raise ValueError("Content must be an instance of ApiResponse ,PaginatedApiResponse or TokenResponse.")
         super().__init__(content=cbor_content, media_type="application/cbor", status_code=status_code, **kwargs)
 
 def process_mongodb_data(data):
-    logger.debug(f"ini bro: {type(data)}")
     if isinstance(data, dict):
         # Jika data adalah dictionary, proses semua nilai dalam dictionary
         if 'data' in data:
@@ -58,47 +58,23 @@ def cbor_or_json(func):
     
     return wrapper
 
-def cbor_or_json_req(model):
-    def decorator(func):
-        async def wrapper(req: Request, *args, **kwargs):
-            content_type = req.headers.get("content-type", "")
-            if content_type == "application/cbor":
-                try:
-                    body = cbor2.loads(await req.body())
-                except Exception:
-                    raise ValueError("Invalid CBOR format")
-
-                # Validasi data menggunakan model Pydantic
-                try:
-                    validated_data = model(**body)
-                except ValidationError as e:
-                    raise ValueError(e.errors())
-
-                kwargs["req"] = validated_data  # Berikan objek tervalidasi ke handler
-            else:
-                kwargs["req"] = await req.json()  # Untuk JSON, biarkan FastAPI memproses
-
-            return await func(*args, **kwargs)
-
-        return wrapper
-    return decorator
-
-async def parse_cbor_to_model(request: Request, model: BaseModel):
+# Dependency for parsing and validating request body
+async def parse_request_body(request: Any, model: BaseModel):
+    env = config.app_env
     try:
-        if request.headers.get("content-type") == "application/cbor":
-            body = await request.body()
-            try:
-                data = cbor2.loads(body)  # Parsing CBOR menjadi dictionary
-            except cbor2.CBORDecodeError:
-                raise ValueError("Invalid CBOR format")
+        if env == "production":
+            # Parse CBOR data
+            body_bytes = await request.body()
+            parsed_body = cbor2.loads(body_bytes)
         else:
-            data = await request.json()  # Fallback ke JSON
-        
-        # Validasi menggunakan model Pydantic
-        return model(**data)
+            # Parse JSON data (default)
+            parsed_body = await request.json()
+
+        # Validate using Pydantic model
+        return model(**parsed_body)
     except Exception as e:
-        raise ValueError(f"Invalid request format: {str(e)}")
-    
+        raise ValueError("Invalid request data")
+        
 def hash_password(password: str, salt=None) -> tuple:
     usalt = bcrypt.gensalt() if salt == None else salt
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), usalt)

@@ -11,6 +11,7 @@ from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
 from baseapp.services.auth.crud import CRUD
 
+
 config = get_settings()
 _crud = CRUD()
 logger = logging.getLogger()
@@ -25,8 +26,6 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
     with _crud:
         user_info = _crud.validate_user(username, password)
 
-    logger.debug(f"User info: {user_info}")
-
     # Data token
     token_data = {
         "sub": username,
@@ -34,6 +33,8 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
         "roles": user_info.roles,
         "authority": user_info.authority,
         "org_id": user_info.org_id,
+        "_feature": user_info.feature,
+        "_bitws": user_info.bitws
     }
 
     # Buat akses token dan refresh token
@@ -75,8 +76,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
 
     # Validasi user
     with _crud:
-        user_info = _crud.validate_user(username, password)
-    logger.debug(f"User info: {user_info}")
+        _crud.validate_user(username, password)
 
     otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
 
@@ -98,12 +98,10 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
     # Validasi user
     with _crud:
         user_info = _crud.find_user(username)
-    logger.debug(f"User info: {user_info}")
 
     # Simpan refresh token ke Redis
     with RedisConn() as redis_conn:
         stored_otp = redis_conn.get(f"otp:{username}")
-        logger.debug(f"ini otp nya : {stored_otp}")
         if stored_otp and stored_otp == otp:
             # Data token
             token_data = {
@@ -112,6 +110,8 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
                 "roles": user_info.get("roles"),
                 "authority": user_info.get("authority"),
                 "org_id": user_info.get("org_id"),
+                "_feature": user_info.get("feature"),
+                "_bitws": user_info.get("bitws")
             }
 
             # Buat akses token dan refresh token
@@ -202,7 +202,7 @@ async def token(
         expired_at=expired_at.isoformat()
     )
 
-@router.post("/refresh", response_model=ApiResponse)
+@router.post("/refresh-token", response_model=ApiResponse)
 async def refresh_token(request: Request) -> ApiResponse:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:

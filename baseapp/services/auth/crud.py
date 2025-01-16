@@ -3,7 +3,7 @@ from hmac import compare_digest
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo
 from baseapp.model.common import Status, OTP_BASE_KEY
-from baseapp.utils.utility import hash_password
+from baseapp.utils.utility import hash_password, get_enum
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -12,6 +12,8 @@ class CRUD:
     def __init__(self):
         self.user_collection = "_user"
         self.org_collection = "_organization"
+        self.permissions_collection = "_featureonrole"
+
         self.mongo = mongodb.MongoConn()  # Inisialisasi MongoDB di sini
 
     def __enter__(self):
@@ -32,6 +34,23 @@ class CRUD:
             raise ValueError("Organization not found")
         return find_org.get("authority")
 
+    def get_role_action(self):
+        bitRA = get_enum(self.mongo,"ROLEACTION")
+        bitRA = bitRA["value"]
+        return bitRA
+    
+    def get_feature(self, roles):
+        _featureDict = {}
+        collection = self.mongo._db[self.permissions_collection]
+        query = {"r_id": {"$in": roles}}
+        find_role = collection.find(query)
+        for i in find_role:
+            if i['f_id'] not in _featureDict:
+                _featureDict[i['f_id']] = i['permission']
+            else:
+                _featureDict[i['f_id']] = i['permission'] | _featureDict[i['f_id']]
+        return _featureDict
+    
     def validate_password(self, user_info, password: str) -> UserInfo:
         if user_info.get("status") != Status.ACTIVE.value:
             logger.warning(f"User {user_info.get('username')} is not active.")
@@ -57,7 +76,9 @@ class CRUD:
             id=user_info["_id"], 
             org_id=user_info["org_id"], 
             roles=user_info["roles"], 
-            authority=user_info["authority"]
+            authority=user_info["authority"],
+            bitws=user_info["bitws"],
+            feature=user_info["feature"]
         )
 
     def find_user(self, username: str) -> dict:
@@ -67,6 +88,8 @@ class CRUD:
         if not user_info:
             logger.warning(f"User with username or email '{username}' not found.")
             raise ValueError("User not found")
+        user_info["bitws"]=self.get_role_action()
+        user_info["feature"]=self.get_feature(user_info["roles"])
         return user_info
     
     def validate_user(self, username, password) -> UserInfo:
@@ -75,7 +98,7 @@ class CRUD:
 
         user_data = {
             key: user_info.get(key, None)
-            for key in ["_id", "username", "org_id", "password", "salt", "roles", "status"]
+            for key in ["_id", "username", "org_id", "password", "salt", "roles", "status", "bitws", "feature"]
         }
         user_data["authority"] = authority
 

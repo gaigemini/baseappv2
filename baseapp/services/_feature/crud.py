@@ -190,9 +190,7 @@ class CRUD:
                     status="success"
                 )
 
-                return {
-                    "data": results
-                }
+                return results
             except PyMongoError as pme:
                 self.logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
                 # write audit trail for success
