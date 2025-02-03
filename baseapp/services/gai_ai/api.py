@@ -2,10 +2,15 @@ from fastapi import APIRouter
 import requests, json, logging
 from pymongo.errors import PyMongoError
 
-from langchain.prompts import PromptTemplate
-from langchain.llms.base import LLM
-from langchain.agents import initialize_agent, Tool
-from typing import Optional, List, Any
+# from langchain.prompts import PromptTemplate
+# from langchain.llms.base import LLM
+# from langchain.agents import initialize_agent, Tool
+# from typing import Optional, List, Any
+
+# import pandas as pd
+# from pandasai import Agent
+# from pandasai import DataFrame 
+# from pandasai.llm.ollama import Ollama
 
 from baseapp.model.common import ApiResponse
 
@@ -143,7 +148,7 @@ async def test_ai(req: Prompt) -> ApiResponse:
     list_ollama_models()
     
     # Pilih model yang akan digunakan
-    selected_model = "qwen2.5:latest"  # Ganti dengan model yang Anda pilih
+    selected_model = "deepseek-r1:32b"  # Ganti dengan model yang Anda pilih
     
     # Contoh penggunaan
     collection_name = "obat"
@@ -174,15 +179,15 @@ async def test_ai(req: Prompt) -> ApiResponse:
         ("name", "string", "The name of the medicine."),
         ("satuan", "string", "The unit of the medicine (e.g., bottle).")
     ]
-    field_descriptions = "\n".join([f"- `{field}` ({dtype}): {desc}" for field, dtype, desc in fields])
     
-    user_query = req.prompt
     # user_query = "make a prescription for headache medication, show only 5 data"
+    # user_query = "carikan obat demam untuk anak dan obat semisalnya. saya butuh 5"
     # user_query = "Find all medicines containing 'Paracetamol' as an active ingredient and sort them by their name in ascending order and limit 10 record"
     # user_query = "Find all medicines categorized as 'Antiseptik' but exclude those with 'Hipersensitivitas' in their contraindications. Sort the results by their code in descending order."
     # user_query = "Find all medicines indicated for 'fever' with a dosage containing '1 tablet every 8 hours'. Sort the results by name in ascending order. Limit 5 record."
     
-    prompt = generate_prompt(collection_name, fields, user_query)
+    user_query = req.prompt
+    prompt = generate_pre_prompt(collection_name, fields, user_query)
     # prompt = PromptTemplate(
     #     input_variables=["query"],
     #     template=(
@@ -220,7 +225,7 @@ async def test_ai(req: Prompt) -> ApiResponse:
 @router.post("/test2", response_model=ApiResponse)
 async def test_ai_2(req: Prompt) -> ApiResponse:
     # Pilih model yang akan digunakan
-    selected_model = "qwen2.5:latest"  # Ganti dengan model yang Anda pilih
+    selected_model = "deepseek-r1:32b"  # Ganti dengan model yang Anda pilih
     
     # Contoh penggunaan
     collection_name = "obat"
