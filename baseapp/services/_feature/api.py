@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, Request
 
 from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
+from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
 
 from baseapp.services._feature.model import Feature
-
 from baseapp.services._feature.crud import CRUD
 _crud = CRUD()
 
@@ -17,7 +17,8 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_feature", tags=["Feature"])
 
 @router.put("/update", response_model=ApiResponse)
-async def update_feature_permission(req: Feature, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def update_feature_permission(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_feature", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -28,10 +29,13 @@ async def update_feature_permission(req: Feature, cu: CurrentUser = Depends(get_
         ip_address=cu.ip_address,  # Jika ada
         user_agent=cu.user_agent   # Jika ada
     )
+
+    req = await parse_request_body(req, Feature)
     response = _crud.set_permission(req)
     return ApiResponse(status=0, message="Data updated", data=response)
     
 @router.get("/list/{role_id}", response_model=ApiResponse)
+@cbor_or_json
 async def find_by_role_id(role_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_feature", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")

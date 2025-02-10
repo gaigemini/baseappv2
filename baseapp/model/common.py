@@ -23,6 +23,12 @@ class CurrentUser(BaseModel):
     ip_address: Optional[str] = None
     user_agent : Optional[str] = None
 
+class Pagination(BaseModel):
+    """Pagination details."""
+    total_items: int = Field(description="Total number of items.")
+    total_pages: int = Field(description="Total number of pages.")
+    current_page: int = Field(description="Current page.")
+    items_per_page: int = Field(description="Number of items per page.")
 class ApiResponse(BaseModel):
     """Representation of API response."""
     status: int = Field(description="Status of response, 0 is successfully.")
@@ -30,6 +36,8 @@ class ApiResponse(BaseModel):
         default=None, description="Explaination of the error.")
     data: Optional[Any] = Field(
         default=None, description="Content of result from API call.")
+    pagination: Optional[Pagination] = Field(
+        default=None, description="Pagination details if applicable.")
     
 class LogInfo(BaseModel):
     """Representation of Logging for information."""
@@ -43,17 +51,6 @@ class LogError(BaseModel):
     log_id: str = Field(description="Logging id of process flow.")
     error_id: int = Field(description="Error id.")
     error: Any = Field(description="Error description.")
-class Pagination(BaseModel):
-    """Pagination details."""
-    total_items: int = Field(description="Total number of items.")
-    total_pages: int = Field(description="Total number of pages.")
-    current_page: int = Field(description="Current page.")
-    items_per_page: int = Field(description="Number of items per page.")
-
-class PaginatedApiResponse(ApiResponse):
-    """API response with paginated data."""
-    pagination: Optional[Pagination] = Field(
-        default=None, description="Pagination details if applicable.")
     
 class TokenResponse(BaseModel):
     access_token: str

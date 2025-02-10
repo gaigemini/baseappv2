@@ -2,13 +2,12 @@ import cbor2,bcrypt,string,secrets,logging
 from fastapi.responses import Response, JSONResponse
 from pymongo.errors import PyMongoError
 from fastapi import Response, Request
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from functools import wraps
 from datetime import datetime, timezone
-from typing import Any
 
 from baseapp.config.setting import get_settings
-from baseapp.model.common import ApiResponse, PaginatedApiResponse, TokenResponse
+from baseapp.model.common import ApiResponse, TokenResponse
 
 config = get_settings()
 logger = logging.getLogger()
@@ -17,14 +16,15 @@ logger = logging.getLogger()
 class CBORResponse(Response):
     def __init__(self, content, status_code: int = 200, **kwargs):
         # Periksa apakah konten adalah salah satu dari model yang didukung
-        if isinstance(content, (ApiResponse, PaginatedApiResponse, TokenResponse)):
-            content = process_mongodb_data(content.model_dump())
+        if isinstance(content, (ApiResponse, TokenResponse)):
+            content = process_mongodb_data(content.model_dump(mode="json"))
             cbor_content = cbor2.dumps(content)
         else:
-            raise ValueError("Content must be an instance of ApiResponse ,PaginatedApiResponse or TokenResponse.")
+            raise ValueError("Content must be an instance of ApiResponse or TokenResponse.")
         super().__init__(content=cbor_content, media_type="application/cbor", status_code=status_code, **kwargs)
 
 def process_mongodb_data(data):
+    
     if isinstance(data, dict):
         # Jika data adalah dictionary, proses semua nilai dalam dictionary
         if 'data' in data:
@@ -45,7 +45,7 @@ def get_response_based_on_env(response_model: BaseModel, status_code: int = 200)
     if config.app_env == "production":
         return CBORResponse(content=response_model, status_code=status_code)
     else:
-        return JSONResponse(content=response_model.model_dump(), status_code=status_code)
+        return JSONResponse(content=response_model.model_dump(mode="json"), status_code=status_code)
 
 def cbor_or_json(func):
     @wraps(func)
@@ -58,22 +58,22 @@ def cbor_or_json(func):
     
     return wrapper
 
-# Dependency for parsing and validating request body
-async def parse_request_body(request: Any, model: BaseModel):
-    env = config.app_env
-    try:
-        if env == "production":
-            # Parse CBOR data
-            body_bytes = await request.body()
-            parsed_body = cbor2.loads(body_bytes)
-        else:
-            # Parse JSON data (default)
-            parsed_body = await request.json()
+async def parse_request_body(request: Request, model):
+    """Parsing request body (CBOR/JSON) dan validasi dengan Pydantic."""
+    content_type = request.headers.get("content-type", "")
 
-        # Validate using Pydantic model
-        return model(**parsed_body)
+    try:
+        if content_type == "application/cbor":
+            body = await request.body()
+            if not body:
+                raise ValueError("Empty request body")
+            data = cbor2.loads(body)
+        else:  # Default ke JSON
+            data = await request.json()
+        
+        return model(**data)  # Validasi dengan Pydantic
     except Exception as e:
-        raise ValueError("Invalid request data")
+        raise ValueError(f"Invalid request format: {str(e)}")
         
 def hash_password(password: str, salt=None) -> tuple:
     usalt = bcrypt.gensalt() if salt == None else salt

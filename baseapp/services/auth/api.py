@@ -11,7 +11,6 @@ from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
 from baseapp.services.auth.crud import CRUD
 
-
 config = get_settings()
 _crud = CRUD()
 logger = logging.getLogger()

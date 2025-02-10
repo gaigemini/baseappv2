@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Query, Depends
 
-from baseapp.model.common import ApiResponse, PaginatedApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
+from baseapp.utils.utility import cbor_or_json
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -15,6 +16,7 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_dms/browse", tags=["DMS - Browse"])
 
 @router.get("/key/{refkey_table}/{refkey_id}", response_model=ApiResponse)
+@cbor_or_json
 async def browse_by_key(
         refkey_table: str, refkey_id: str,
         cu: CurrentUser = Depends(get_current_user)
@@ -50,6 +52,7 @@ async def browse_by_key(
     return ApiResponse(status=0, message="Data loaded", data=response["data"])
 
 @router.get("/folder/{pid}", response_model=ApiResponse)
+@cbor_or_json
 async def list_folder(
         pid: str,
         cu: CurrentUser = Depends(get_current_user)
@@ -83,7 +86,8 @@ async def list_folder(
     )
     return ApiResponse(status=0, message="Data loaded", data=response["data"])
 
-@router.get("/explore/{folder_id}", response_model=PaginatedApiResponse)
+@router.get("/explore/{folder_id}", response_model=ApiResponse)
+@cbor_or_json
 async def list_file_by_folder_id(
         folder_id: str, 
         page: int = Query(1, ge=1, description="Page number"),
@@ -91,7 +95,7 @@ async def list_file_by_folder_id(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: CurrentUser = Depends(get_current_user)
-    ) -> PaginatedApiResponse:
+    ) -> ApiResponse:
 
     if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
@@ -121,9 +125,10 @@ async def list_file_by_folder_id(
         sort_field=sort_field,
         sort_order=sort_order,
     )
-    return PaginatedApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
+    return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
 
 @router.get("/storage", response_model=ApiResponse)
+@cbor_or_json
 async def storage(
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:

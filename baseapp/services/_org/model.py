@@ -40,3 +40,7 @@ class OrganizationUpdate(BaseModel):
 
 class OrganizationUpdateStatus(BaseModel):
     status: Status = Field(default=None, description="Status of the organization.")
+
+class InitRequest(BaseModel):
+    org: Organization
+    user: User

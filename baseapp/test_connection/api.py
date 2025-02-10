@@ -1,50 +1,102 @@
-from fastapi import APIRouter, Request
-import logging
+from fastapi import APIRouter, Request, Depends
+import logging, httpx, json, time, cbor2
 
 from baseapp.test_connection import crud as test
-from baseapp.model.common import ApiResponse
+from baseapp.model.common import ApiResponse, CurrentUser
 
 from baseapp.config import setting
 config = setting.get_settings()
 
-from baseapp.utils.utility import get_response_based_on_env
+from baseapp.utils.utility import cbor_or_json
+from baseapp.utils.jwt import get_current_user
 
 logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/test", tags=["Test Connection"])
 
 @router.get("/database", response_model=ApiResponse)
-def test_connection_to_database(ctx: Request) -> ApiResponse:
+@cbor_or_json
+async def test_connection_to_database(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_mongodb()
-    response = ApiResponse(status=0, message=resp)
-    return response
-    # return get_response_based_on_env(response, app_env=config.app_env)
+    return ApiResponse(status=0, message=resp)
 
 @router.get("/redis")
-def test_connection_to_redis(ctx: Request) -> ApiResponse:
+@cbor_or_json
+async def test_connection_to_redis(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_redis()
-    response = ApiResponse(status=0, message=resp)
-    return response
-    # return get_response_based_on_env(response, app_env=config.app_env)
+    return ApiResponse(status=0, message=resp)
     
 @router.get("/minio")
-def test_connection_to_minio(ctx: Request) -> ApiResponse:
+@cbor_or_json
+async def test_connection_to_minio(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_minio()
-    response = ApiResponse(status=0, message=resp)
-    return response
-    # return get_response_based_on_env(response, app_env=config.app_env)
+    return ApiResponse(status=0, message=resp)
 
 @router.get("/rabbit")
-def test_connection_to_rabbit(ctx: Request) -> ApiResponse:
+@cbor_or_json
+async def test_connection_to_rabbit(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_rabbit()
-    response = ApiResponse(status=0, message=resp)
-    return response
-    # return get_response_based_on_env(response, app_env=config.app_env)
+    return ApiResponse(status=0, message=resp)
     
 @router.get("/clickhouse")
-def test_connection_to_clickhouse(ctx: Request) -> ApiResponse:
+@cbor_or_json
+async def test_connection_to_clickhouse(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_clickhouse()
-    response = ApiResponse(status=0, message=resp)
-    return response
-    # return get_response_based_on_env(response, app_env=config.app_env)
+    return ApiResponse(status=0, message=resp)
+
+@router.api_route("/forward/cbor/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], response_model=ApiResponse)
+async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    # Extract incoming request details
+    method = ctx.method.upper()
+    headers = dict(ctx.headers)
+    
+    # content_type = headers.get("content-type", "").lower()
+    # api_key = ctx.headers.get("x-api-key")
+    # api_secret = ctx.headers.get("x-api-secret")
+    forwarded_url = f"{config.host}/{path}"
+    logger.debug(f"Target URL: {forwarded_url}")
+
+    body = await ctx.body()
+    encoded_body = {}
+    if body:
+        logger.debug(f"Payload body: {len(body)} type: {type(body)}")
+
+        # Generate `x-signature`
+        minified_body = json.loads(body.decode("utf-8"))
+        # Encode body ke CBOR
+        encoded_body = cbor2.dumps(minified_body)
+
+    logger.debug(f"Informasi header: {headers}")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            logger.debug("awal client")
+            response = await client.request(
+                method=method,
+                url=forwarded_url,
+                # headers=headers,
+                headers={"Content-Type": "application/cbor", "authorization":headers["authorization"]},
+                # data=body,
+                data=encoded_body,
+                timeout=30
+            )
+            logger.debug("akhir client")
+            logger.debug(f"respon status: {response.raise_for_status()}")
+            logger.debug(f"ini dia responsenya: {cbor2.loads(response.content)}")
+            logger.debug(f"ini dia responsenya dari API: {cbor2.loads(response.content)}")
+            response.raise_for_status()
+            return cbor2.loads(response.content)
+        except httpx.RequestError as exc:
+            logger.error(f"An error occurred while requesting {exc.request.url}: {exc}")
+            raise ValueError(str(exc))
+        except httpx.HTTPStatusError as exc:
+            logger.error(f"HTTP error occurred: {exc.response.status_code}")
+
+            # Tangani jika status 400
+            if exc.response.status_code == 400:
+                error_detail = cbor2.loads(exc.response.content)  # Decode CBOR jika response CBOR
+                return error_detail
+        except Exception as e:
+            logger.error(f"errornya disini ya bro: {e}")
+            raise ValueError(e)
 

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, Request
 from typing import Optional
 
-from baseapp.model.common import ApiResponse, PaginatedApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
-from baseapp.utils.utility import is_none
+from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -19,7 +19,8 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_user", tags=["User"])
 
 @router.post("/create", response_model=ApiResponse)
-async def create(req: model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
 
@@ -30,11 +31,13 @@ async def create(req: model.User, cu: CurrentUser = Depends(get_current_user)) -
         user_agent=cu.user_agent   # Jika ada
     )
 
+    req = await parse_request_body(req, model.User)
     response = _crud.create(req)
     return ApiResponse(status=0, message="Data created", data=response)
     
 @router.put("/update/{user_id}", response_model=ApiResponse)
-async def update_by_admin(user_id: str, req: model.UpdateByAdmin, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def update_by_admin(user_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -44,11 +47,14 @@ async def update_by_admin(user_id: str, req: model.UpdateByAdmin, cu: CurrentUse
         ip_address=cu.ip_address,  # Jika ada
         user_agent=cu.user_agent   # Jika ada
     )
+
+    req = await parse_request_body(req, model.UpdateByAdmin)
     response = _crud.update_all_by_admin(user_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/change_password", response_model=ApiResponse)
-async def update_change_password(req: model.ChangePassword, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def update_change_password(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -59,11 +65,13 @@ async def update_change_password(req: model.ChangePassword, cu: CurrentUser = De
         user_agent=cu.user_agent   # Jika ada
     )
 
+    req = await parse_request_body(req, model.ChangePassword)
     response = _crud.change_password(req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/reset_password/{user_id}", response_model=ApiResponse)
-async def update_reset_passowrd(user_id: str, req: model.ChangePassword, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+@cbor_or_json
+async def update_reset_passowrd(user_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_role", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -73,11 +81,13 @@ async def update_reset_passowrd(user_id: str, req: model.ChangePassword, cu: Cur
         ip_address=cu.ip_address,  # Jika ada
         user_agent=cu.user_agent   # Jika ada
     )
-
+    
+    req = await parse_request_body(req, model.ChangePassword)
     response = _crud.reset_password(user_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
-@router.get("", response_model=PaginatedApiResponse)
+@router.get("", response_model=ApiResponse)
+@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -88,7 +98,7 @@ async def get_all_data(
         role: Optional[str] = Query(None, description="Filter by roles"),
         status: Optional[str] = Query(None, description="Filter by status"),
         cu: CurrentUser = Depends(get_current_user)
-    ) -> PaginatedApiResponse:
+    ) -> ApiResponse:
 
     if not permission_checker.has_permission(cu.roles, "_user", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
@@ -125,9 +135,10 @@ async def get_all_data(
         sort_field=sort_field,
         sort_order=sort_order,
     )
-    return PaginatedApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
+    return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{user_id}", response_model=ApiResponse)
+@cbor_or_json
 async def find_by_id(user_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
