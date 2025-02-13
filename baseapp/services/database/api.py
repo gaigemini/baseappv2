@@ -1,12 +1,11 @@
 from fastapi import APIRouter
 from baseapp.model.common import ApiResponse
-
+from baseapp.utils.utility import cbor_or_json
 from baseapp.config.setting import get_settings
 config = get_settings()
 
-from baseapp.utils.utility import get_response_based_on_env
-
-from baseapp.services.database import crud
+from baseapp.services.database.crud import CRUD
+_crud = CRUD()
 
 import logging
 logger = logging.getLogger()
@@ -14,16 +13,8 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/init", tags=["Init"])
 
 @router.post("/database", response_model=ApiResponse)
+@cbor_or_json
 async def init_database() -> ApiResponse:
-    try:
-        initDB = crud.init_database()
-        response = ApiResponse(status=0, data=not initDB)
-        return response
-        # return get_response_based_on_env(response, app_env=config.app_env)
-    except Exception as err:
-        error_message = f"baseapp.services.database.api {err=}, {type(err)=}"
-        logger.error(err, stack_info=True)
-        response = ApiResponse(status=4, message=error_message)
-        return response
-        # return get_response_based_on_env(response, app_env=config.app_env)
+    response = _crud.create()
+    return ApiResponse(status=0, message="Database created", data=not response)
 
