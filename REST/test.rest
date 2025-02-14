@@ -6,7 +6,7 @@
 @devHost = https://gai.co.id/gai-baseapp-service
 @host = {{localHost}}
 @apiKey = eb7d28cc-40cd-4024-9171-09293c588bdb
-@ownerToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnYWkuY28uaWQiLCJpZCI6Ijc4ZDRiNzljLWRlMmMtNDU1Ny1iNzc5LTc0ZDJlODQ0NGEyZiIsInJvbGVzIjpbImExYWVkMGJhLTY0ODctNDc5NC1iNWE2LTVmM2E1M2JlM2M5YiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjA0ZDQwZGFkLWQ5NTItNGY0Ni04NzJmLWMyYzJkZTk4ZWMxOCIsIl9mZWF0dXJlIjp7Il91c2VyIjo3LCJfcm9sZSI6NywiX2VudW0iOjE1LCJfYXVkaXR0cmFpbCI6MSwiX2ZlYXR1cmUiOjUsIl9tZW51Ijo1LCJfb3JnYW5pemF0aW9uIjo3LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9kbXNpbmRleGxpc3QiOjcsIl9kbXNkb2N0eXBlIjo3LCJfZG1zYnJvd3NlIjoxNTl9LCJfYml0d3MiOnsiYWRkIjoyLCJhcHByb3ZhbCI6NjQsImRlbGV0ZSI6OCwiZWRpdCI6NCwiZXhwb3J0IjoxNiwiaW1wb3J0IjozMiwic2V0dGluZyI6MTI4LCJ2aWV3IjoxfSwiZXhwIjoxNzM5MjQ3NzExfQ.9WjTCgpglsCn_SetP-qGhvk-7w-CB5TzaDmUSJWgYrU
+@ownerToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnYWkuY28uaWQiLCJpZCI6Ijc4ZDRiNzljLWRlMmMtNDU1Ny1iNzc5LTc0ZDJlODQ0NGEyZiIsInJvbGVzIjpbImExYWVkMGJhLTY0ODctNDc5NC1iNWE2LTVmM2E1M2JlM2M5YiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjA0ZDQwZGFkLWQ5NTItNGY0Ni04NzJmLWMyYzJkZTk4ZWMxOCIsIl9mZWF0dXJlIjp7Il91c2VyIjo3LCJfcm9sZSI6NywiX2VudW0iOjE1LCJfYXVkaXR0cmFpbCI6MSwiX2ZlYXR1cmUiOjUsIl9tZW51Ijo1LCJfb3JnYW5pemF0aW9uIjo3LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9kbXNpbmRleGxpc3QiOjcsIl9kbXNkb2N0eXBlIjo3LCJfZG1zYnJvd3NlIjoxNTl9LCJfYml0d3MiOnsiYWRkIjoyLCJhcHByb3ZhbCI6NjQsImRlbGV0ZSI6OCwiZWRpdCI6NCwiZXhwb3J0IjoxNiwiaW1wb3J0IjozMiwic2V0dGluZyI6MTI4LCJ2aWV3IjoxfSwiZXhwIjoxNzM5NDMzNDA2fQ.ZGwncEMnHQ2F_4a4pBpiqfOIrbHyhajg3P9C5-T78do
 @partnerToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib3h5IiwiaWQiOiIwMUo2SDhHTkU0VkdYSDlHWE1INVcwQVlZRiIsInJvbGUiOlsiQURNSU4iXSwiYXV0aCI6IlBBUlRORVIiLCJjb2RlIjoiYm94IiwiZXhwIjoxNzI4NDY0MDIzfQ.5px1UMSesggeVv32TWKT882eC2DKtFpFA0kHFctCxT4
 @clientToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZW1weSIsImlkIjoiMDFKNkg5RVFQTjMyMDQyVlZCSk1SSFk5UlMiLCJyb2xlIjpbIkFETUlOIl0sImF1dGgiOiJDTElFTlQiLCJjb2RlIjoidG1wIiwiZXhwIjoxNzMyNjM5NDkzfQ.edX1RofslWcZnll1-63BeEpF2cqIxPB7BZzRbCwsDks
 @token = {{ownerToken}}
@@ -46,4 +46,20 @@ authorization: {{token}}
 ### get role direct
 GET {{host}}/v1/_role HTTP/1.1
 content-type: {{cbor}}
+authorization: {{token}}
+
+
+### get find user direct
+GET {{host}}/v1/_user/find/78d4b79c-de2c-4557-b779-74d2e8444a2f HTTP/1.1
+content-type: {{cbor}}
+authorization: {{token}}
+
+### get find user direct
+GET {{host}}/v1/profile/user HTTP/1.1
+content-type: {{cbor}}
+authorization: {{token}}
+
+### get find user direct
+GET {{host}}/v1/test/forward/cbor/v1/profile/user HTTP/1.1
+content-type: {{json}}
 authorization: {{token}}
