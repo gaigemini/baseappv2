@@ -34,6 +34,9 @@ data/
 
 .env
 .venv
+venv
 bin/
 lib/
 .
+
+!data/files/initdata.json

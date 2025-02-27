@@ -17,6 +17,8 @@ class CRUD:
         self.collection_org = "_organization"
         self.collection_user = "_user"
         self.collection_role = "_role"
+        self.storage = 10737418240
+        self.usedstorage = 0
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -26,8 +28,6 @@ class CRUD:
         self.org_id = org_id
         self.ip_address = ip_address
         self.user_agent = user_agent
-        self.storage = 10737418240
-        self.usedstorage = 0
 
         # Inisialisasi atau perbarui AuditTrailService dengan konteks terbaru
         self.audit_trail = AuditTrailService(
@@ -75,7 +75,7 @@ class CRUD:
                 init_role = self.init_role(org_data,role_data=obj_role)
 
                 # insert user data to the table
-                user_data["roles"] = init_role["_id"]
+                user_data["roles"] = [init_role["_id"]]
                 init_user = self.init_user(org_data, user_data)
                 return {"org":org_data,"user":init_user}
             except DuplicateKeyError:
@@ -133,7 +133,7 @@ class CRUD:
                 init_role = self.init_role(org_data,role_data=obj_role)
 
                 # insert user data to the table
-                user_data["roles"] = init_role["_id"]
+                user_data["roles"] = [init_role["_id"]]
                 init_user = self.init_user(org_data, user_data)
                 return {"org":org_data,"user":init_user}
             except DuplicateKeyError:

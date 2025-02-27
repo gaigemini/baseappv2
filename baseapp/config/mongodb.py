@@ -131,8 +131,8 @@ class MongoConn:
             if self._db.name in existing_databases:
                 return True
             else:
-                logger.error(f"Error checking if database {self._db} exists")
-                raise ValueError(f"Error checking if database {self._db} exists")
+                logger.info(f"Database {self._db.name} does not exist.")
+                return False
         except errors.PyMongoError as e:
             logger.error(f"Error while checking database existence: {e}")
             raise ValueError(f"Database operation failed: {e}")
