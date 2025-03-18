@@ -269,7 +269,12 @@ class CRUD:
         try:
             result = collection.insert_one(user_data)
             logger.info(f"User created with id: {result.inserted_id}")
-            return user_data
+            return {
+                "username":user_data["username"],
+                "email":user_data["email"],
+                "status":user_data["status"],
+                "roles":user_data["roles"]
+            }
         except PyMongoError as pme:
             logger.error(f"Database error occurred while init user.: {str(pme)}")
             # write audit trail for fail
