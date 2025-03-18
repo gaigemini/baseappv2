@@ -50,7 +50,7 @@ async def update_by_id(enum_id: str, req: Request, cu: CurrentUser = Depends(get
     )
 
     req = await parse_request_body(req, EnumUpdate)
-    response = _crud.update_by_id(enum_id)
+    response = _crud.update_by_id(enum_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.get("", response_model=ApiResponse)

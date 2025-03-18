@@ -120,7 +120,7 @@ async def get_all_data(
     # addtional when filter running
     if username:
         filters["username"] = username
-    if username:
+    if email:
         filters["email"] = email
     if status:
         filters["status"] = status
