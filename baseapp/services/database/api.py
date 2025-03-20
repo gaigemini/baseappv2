@@ -15,6 +15,12 @@ router = APIRouter(prefix="/v1/init", tags=["Init"])
 @router.post("/database", response_model=ApiResponse)
 @cbor_or_json
 async def init_database() -> ApiResponse:
-    response = _crud.create()
+    response = _crud.create_db()
     return ApiResponse(status=0, message="Database created", data=not response)
+
+@router.post("/minio-bucket", response_model=ApiResponse)
+@cbor_or_json
+async def init_database() -> ApiResponse:
+    response = _crud.create_bucket()
+    return ApiResponse(status=0, message="Bucket created", data=not response)
 

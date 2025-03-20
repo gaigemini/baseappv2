@@ -75,7 +75,7 @@ async def list_folder(
     if cu.org_id:
         filters["org_id"] = cu.org_id
 
-    if pid != "pid":
+    if pid != "root":
         filters["pid"] = pid
     else:
         filters["level"] = 1
