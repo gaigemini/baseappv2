@@ -85,13 +85,13 @@ class CRUD:
                     return update_permission
                 else:
                     resPerm = bitRA[obj['key_action']]
-                    obj = {}
-                    obj["_id"] = str(uuid.uuid4())
-                    obj["r_id"] = obj["r_id"]
-                    obj["f_id"] = obj["f_id"]
-                    obj["permission"] = resPerm
-                    obj["org_id"] = self.org_id
-                    result = collection_role.insert_one(obj) 
+                    obj_add = {}
+                    obj_add["_id"] = str(uuid.uuid4())
+                    obj_add["r_id"] = obj["r_id"]
+                    obj_add["f_id"] = obj["f_id"]
+                    obj_add["permission"] = resPerm
+                    obj_add["org_id"] = self.org_id
+                    result = collection_role.insert_one(obj_add) 
                     return obj
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
