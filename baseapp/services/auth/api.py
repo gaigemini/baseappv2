@@ -11,13 +11,18 @@ from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
 from baseapp.services.auth.crud import CRUD
 
+from baseapp.utils.utility import cbor_or_json, parse_request_body
+
 config = get_settings()
 _crud = CRUD()
 logger = logging.getLogger()
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
+@cbor_or_json
 async def login(response: Response, req: UserLoginModel) -> ApiResponse:
+    req = await parse_request_body(req, UserLoginModel)
+
     username = req.username
     password = req.password
 
@@ -69,7 +74,10 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
     return ApiResponse(status=0, data=data)
 
 @router.post("/request-otp", response_model=ApiResponse)
-async def request_otp(req: UserLoginModel) -> ApiResponse:
+@cbor_or_json
+async def request_otp(req: Request) -> ApiResponse:
+    req = await parse_request_body(req, UserLoginModel)
+
     username = req.username
     password = req.password
 
@@ -90,7 +98,10 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
 
 @router.post("/verify-otp", response_model=ApiResponse)
-async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
+@cbor_or_json
+async def verify_otp(response: Response, req: Request) -> ApiResponse:
+    req = await parse_request_body(req, VerifyOTPRequest)
+
     username = req.username
     otp = req.otp
 
@@ -202,6 +213,7 @@ async def token(
     )
 
 @router.post("/refresh-token", response_model=ApiResponse)
+@cbor_or_json
 async def refresh_token(request: Request) -> ApiResponse:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
@@ -231,6 +243,7 @@ async def refresh_token(request: Request) -> ApiResponse:
     return ApiResponse(status=0, data=data)
     
 @router.post("/logout", response_model=ApiResponse)
+@cbor_or_json
 async def logout(request: Request, response: Response) -> ApiResponse:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
