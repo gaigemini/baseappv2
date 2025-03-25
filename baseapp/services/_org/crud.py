@@ -1,6 +1,9 @@
 import logging,json,uuid,traceback
 from datetime import datetime,timezone
+
 from pymongo.errors import DuplicateKeyError, PyMongoError
+from pymongo import ASCENDING, DESCENDING
+
 from typing import Optional, Dict, Any
 
 from baseapp.config import setting, mongodb
@@ -389,4 +392,85 @@ class CRUD:
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
                 self.logger.exception(f"Error updating role: {str(e)}")
+                raise
+    
+    def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
+        """
+        Retrieve all documents from the collection with optional filters, pagination, and sorting.
+        """
+        client = mongodb.MongoConn()
+        with client as mongo:
+            collection = mongo._db[self.collection_org]
+            try:
+                # Apply filters
+                query_filter = filters or {}
+
+                # Pagination
+                skip = (page - 1) * per_page
+                limit = per_page
+
+                # Sorting
+                order = ASCENDING if sort_order == "asc" else DESCENDING
+
+                # Selected field
+                selected_fields={
+                    "id": "$_id",
+                    "org_name":1,
+                    "org_initial":1,
+                    "org_phone":1,
+                    "org_address":1,
+                    "org_desc":1,
+                    "status":1,
+                    "_id": 0
+                }
+
+                # Aggregation pipeline
+                pipeline = [
+                    {"$match": query_filter},  # Filter stage
+                    {"$sort": {sort_field: order}},  # Sorting stage
+                    {"$skip": skip},  # Pagination skip stage
+                    {"$limit": limit},  # Pagination limit stage
+                    {"$project": selected_fields}  # Project only selected fields
+                ]
+
+                # Execute aggregation pipeline
+                cursor = collection.aggregate(pipeline)
+                results = list(cursor)
+
+                # Total count
+                total_count = collection.count_documents(query_filter)
+
+                # write audit trail for success
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="retrieve",
+                    target=self.collection_org,
+                    target_id="agregate",
+                    details={"aggregate": pipeline},
+                    status="success"
+                )
+
+                return {
+                    "data": results,
+                    "pagination": {
+                        "current_page": page,
+                        "items_per_page": per_page,
+                        "total_items": total_count,
+                        "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
+                    },
+                }
+            except PyMongoError as pme:
+                logger.error(f"Error retrieving user with filters and pagination: {str(e)}")
+                # write audit trail for success
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="retrieve",
+                    target=self.collection_org,
+                    target_id="agregate",
+                    details={"aggregate": pipeline},
+                    status="failure"
+                )
+                raise ValueError("Database error while retrieve document") from pme
+            except Exception as e:
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

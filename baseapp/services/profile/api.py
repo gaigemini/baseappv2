@@ -15,7 +15,7 @@ router = APIRouter(prefix="/v1/profile", tags=["Profile"])
     
 @router.get("/organization", response_model=ApiResponse)
 @cbor_or_json
-async def get_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def get_org_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     token: str = cu.token
     org_id: str = cu.org_id
     api_url = config.host + f"/v1/_organization/find/{org_id}"
@@ -53,7 +53,7 @@ async def get_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRespons
 
 @router.get("/user", response_model=ApiResponse)
 @cbor_or_json
-async def get_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def get_user_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     token: str = cu.token
     user_id: str = cu.id
     api_url = config.host + f"/v1/_user/find/{user_id}"

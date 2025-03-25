@@ -71,19 +71,19 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
     async with httpx.AsyncClient() as client:
         try:
             logger.debug("awal client")
+            obj_headers = {"Content-Type": "application/cbor"}
+            if "authorization" in headers:
+                obj_headers["authorization"] = headers["authorization"]
             response = await client.request(
                 method=method,
                 url=forwarded_url,
-                # headers=headers,
-                headers={"Content-Type": "application/cbor", "authorization":headers["authorization"]},
-                # data=body,
+                headers=obj_headers,
                 data=encoded_body,
                 timeout=30
             )
             logger.debug("akhir client")
             logger.debug(f"respon status: {response.raise_for_status()}")
             logger.debug(f"ini dia responsenya: {cbor2.loads(response.content)}")
-            logger.debug(f"ini dia responsenya dari API: {cbor2.loads(response.content)}")
             response.raise_for_status()
             return cbor2.loads(response.content)
         except httpx.RequestError as exc:
@@ -91,11 +91,8 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
             raise ValueError(str(exc))
         except httpx.HTTPStatusError as exc:
             logger.error(f"HTTP error occurred: {exc.response.status_code}")
-
-            # Tangani jika status 400
-            if exc.response.status_code == 400:
-                error_detail = cbor2.loads(exc.response.content)  # Decode CBOR jika response CBOR
-                return error_detail
+            error_detail = cbor2.loads(exc.response.content)  # Decode CBOR jika response CBOR
+            return error_detail
         except Exception as e:
             logger.error(f"errornya disini ya bro: {e}")
             raise ValueError(e)

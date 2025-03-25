@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
+from typing import Optional
 
 from baseapp.config import setting
 from baseapp.model.common import ApiResponse, CurrentUser
@@ -23,18 +24,15 @@ router = APIRouter(prefix="/v1/_organization", tags=["Organization"])
 
 @router.post("/init_owner", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User) -> ApiResponse:
-async def create(req: Request) -> ApiResponse:
+async def init_owner(req: Request) -> ApiResponse:
     request_body = await parse_request_body(req, model.InitRequest)
 
     response = _crud.init_owner_org(request_body.org, request_body.user)
-    # response = _crud.init_owner_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_partner", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def init_partner(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -51,16 +49,13 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
 
     request_body = await parse_request_body(req, model.InitRequest)
     request_body.org.authority = 2
-    # org.authority = 2
 
     response = _crud.init_partner_client_org(request_body.org, request_body.user)
-    # response = _crud.init_partner_client_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_client", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def init_client(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -78,11 +73,51 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
     request_body = await parse_request_body(req, model.InitRequest)
     request_body.org.authority = 4
 
-    # org.authority = 4
-
     response = _crud.init_partner_client_org(request_body.org, request_body.user)
-    # response = _crud.init_partner_client_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
+
+@router.get("", response_model=ApiResponse)
+@cbor_or_json
+async def get_all_data(
+        page: int = Query(1, ge=1, description="Page number"),
+        per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+        sort_field: str = Query("_id", description="Field to sort by"),
+        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
+        org_name: Optional[str] = Query(None, description="Filter by organization name"),
+        status: Optional[str] = Query(None, description="Filter by status"),
+        cu: CurrentUser = Depends(get_current_user)
+    ) -> ApiResponse:
+
+    if not permission_checker.has_permission(cu.roles, "_organization", 1):  # 1 untuk izin baca
+        raise PermissionError("Access denied")
+
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    # Build filters dynamically
+    filters = {
+        "ref_id": cu.org_id
+    }
+
+    # addtional when filter running
+    if org_name:
+        filters["org_name"] = org_name
+    if status:
+        filters["status"] = status
+
+    # Call CRUD function
+    response = _crud.get_all(
+        filters=filters,
+        page=page,
+        per_page=per_page,
+        sort_field=sort_field,
+        sort_order=sort_order,
+    )
+    return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
 
 @router.get("/find/{org_id}", response_model=ApiResponse)
 @cbor_or_json
