@@ -1,17 +1,12 @@
 import os
-# from fastapi.openapi.utils import get_openapi
 
 from baseapp.config import setting
 config = setting.get_settings()
 
-from baseapp.model.common import OTP_BASE_KEY
-
-# from json import dumps as jdumps, loads as jloads
-# from cbor2 import dumps as cdumps, loads as cloads
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from baseapp.model.common import OTP_BASE_KEY
 from baseapp.services.middleware import setup_middleware
 
 os.makedirs("log", exist_ok=True) # create log folder
@@ -76,6 +71,7 @@ app.include_router(forgot_password_router)
 app.include_router(gai_ai_router)
 
 allowed_origins = [
+    "http://localhost:53464",
     "https://gai.co.id",
     "https://baseapp.gai.co.id"
 ]
