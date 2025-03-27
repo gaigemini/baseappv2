@@ -50,16 +50,22 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
     method = ctx.method.upper()
     headers = dict(ctx.headers)
     
-    # content_type = headers.get("content-type", "").lower()
-    # api_key = ctx.headers.get("x-api-key")
-    # api_secret = ctx.headers.get("x-api-secret")
+    # Ambil query parameters dari request asli
+    query_params = dict(ctx.query_params)
+
     forwarded_url = f"{config.host}/{path}"
-    logger.debug(f"Target URL: {forwarded_url}")
+
+    # Jika ada query parameters, tambahkan ke URL tujuan
+    if query_params:
+        encoded_query = "&".join([f"{k}={v}" for k, v in query_params.items()])
+        forwarded_url += f"?{encoded_query}"
+        
+    logger.info(f"Target URL: {forwarded_url}")
 
     body = await ctx.body()
     encoded_body = {}
     if body:
-        logger.debug(f"Payload body: {len(body)} type: {type(body)}")
+        # logger.debug(f"Payload body: {len(body)} type: {type(body)}")
 
         # Generate `x-signature`
         minified_body = json.loads(body.decode("utf-8"))
@@ -70,7 +76,7 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
     
     async with httpx.AsyncClient() as client:
         try:
-            logger.debug("awal client")
+            # logger.debug("awal client")
             obj_headers = {"Content-Type": "application/cbor"}
             if "authorization" in headers:
                 obj_headers["authorization"] = headers["authorization"]
@@ -81,9 +87,9 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
                 data=encoded_body,
                 timeout=30
             )
-            logger.debug("akhir client")
-            logger.debug(f"respon status: {response.raise_for_status()}")
-            logger.debug(f"ini dia responsenya: {cbor2.loads(response.content)}")
+            # logger.debug("akhir client")
+            # logger.debug(f"respon status: {response.raise_for_status()}")
+            # logger.debug(f"ini dia responsenya: {cbor2.loads(response.content)}")
             response.raise_for_status()
             return cbor2.loads(response.content)
         except httpx.RequestError as exc:

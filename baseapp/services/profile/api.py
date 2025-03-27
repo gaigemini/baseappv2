@@ -41,15 +41,11 @@ async def get_org_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRes
             raise ValueError(str(exc))
         except httpx.HTTPStatusError as exc:
             logger.error(f"HTTP error occurred: {exc.response.status_code}")
-            # Tangani jika status 400
-            if exc.response.status_code == 400:
-                # error_detail = cbor2.loads(exc.response.content)  # Decode CBOR jika response CBOR
-                # return error_detail
-                if config.app_env == "production":
-                    abcd = cbor2.loads(exc.response.content)
-                    return ApiResponse.model_validate(abcd)
-                else:
-                    return ApiResponse.model_validate_json(exc.response.text)
+            if config.app_env == "production":
+                abcd = cbor2.loads(exc.response.content)
+                return ApiResponse.model_validate(abcd)
+            else:
+                return ApiResponse.model_validate_json(exc.response.text)
 
 @router.get("/user", response_model=ApiResponse)
 @cbor_or_json
@@ -69,8 +65,6 @@ async def get_user_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRe
                 timeout=30
             )
             response.raise_for_status()
-            # logger.debug(f"respon status: {response.raise_for_status()}")
-            # logger.debug(f"respon content: {cbor2.loads(response.content)}")
             if config.app_env == "production":
                 abcd = cbor2.loads(response.content)
                 return ApiResponse.model_validate(abcd)
@@ -81,13 +75,9 @@ async def get_user_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRe
             raise ValueError(str(exc))
         except httpx.HTTPStatusError as exc:
             logger.error(f"HTTP error occurred: {exc.response.status_code}")
-            # Tangani jika status 400
-            if exc.response.status_code == 400:
-                # error_detail = cbor2.loads(exc.response.content)  # Decode CBOR jika response CBOR
-                # return error_detail
-                if config.app_env == "production":
-                    abcd = cbor2.loads(exc.response.content)
-                    return ApiResponse.model_validate(abcd)
-                else:
-                    return ApiResponse.model_validate_json(exc.response.text)
+            if config.app_env == "production":
+                abcd = cbor2.loads(exc.response.content)
+                return ApiResponse.model_validate(abcd)
+            else:
+                return ApiResponse.model_validate_json(exc.response.text)
     
