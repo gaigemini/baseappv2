@@ -552,6 +552,7 @@ class CRUD:
                     "username":1,
                     "email":1,
                     "roles":1,
+                    "role_details":1,
                     "status":1,
                     "org_id":1,
                     "_id": 0
@@ -561,6 +562,31 @@ class CRUD:
                 pipeline = [
                     {"$match": query_filter},  # Filter stage
                     {"$sort": {sort_field: order}},  # Sorting stage
+                    # Lookup stage to join with role groups
+                    {
+                        "$lookup": {
+                            "from": "_role",  # The collection to join with
+                            "localField": "roles",  # Array field in users collection
+                            "foreignField": "_id",  # Field in role_groups collection
+                            "as": "role_details"  # Output array field
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "role_details": {
+                                "$map": {
+                                    "input": "$role_details",
+                                    "as": "role",
+                                    "in": {
+                                        "id": "$$role._id",
+                                        "name": "$$role.name",
+                                        "color": "$$role.color",
+                                        "status": "$$role.status"
+                                    }
+                                }
+                            }
+                        }
+                    },
                     {"$skip": skip},  # Pagination skip stage
                     {"$limit": limit},  # Pagination limit stage
                     {"$project": selected_fields}  # Project only selected fields
