@@ -84,6 +84,9 @@ async def get_all_data(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         org_name: Optional[str] = Query(None, description="Filter by organization name"),
+        org_name_contains: str = Query(None, description="Organization name contains (case insensitive)"),
+        org_name_starts_with: str = Query(None, description="Organization name starts with"),
+        org_name_ends_with: str = Query(None, description="Organization name ends with"),
         status: Optional[str] = Query(None, description="Filter by status"),
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
@@ -106,6 +109,13 @@ async def get_all_data(
     # addtional when filter running
     if org_name:
         filters["org_name"] = org_name
+    elif org_name_contains:
+        filters["name"] = {"$regex": f".*{org_name_contains}.*", "$options": "i"}
+    elif org_name_starts_with:
+        filters["name"] = {"$regex": f"^{org_name_starts_with}", "$options": "i"}
+    elif org_name_ends_with:
+        filters["name"] = {"$regex": f"{org_name_ends_with}$", "$options": "i"}
+
     if status:
         filters["status"] = status
 

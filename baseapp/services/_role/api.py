@@ -64,7 +64,11 @@ async def get_all_data(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: CurrentUser = Depends(get_current_user),
-        status: str = Query(None, description="Status data")
+        name: str = Query(None, description="Name of role (exact match)"),
+        name_contains: str = Query(None, description="Name contains (case insensitive)"),
+        name_starts_with: str = Query(None, description="Name starts with"),
+        name_ends_with: str = Query(None, description="Name ends with"),
+        status: str = Query(None, description="Status of role")
     ) -> ApiResponse:
 
     print(f"ini aldian")
@@ -85,6 +89,15 @@ async def get_all_data(
     if cu.org_id:
         filters["org_id"] = cu.org_id
 
+    if name:
+        filters["name"] = name  # exact match
+    elif name_contains:
+        filters["name"] = {"$regex": f".*{name_contains}.*", "$options": "i"}
+    elif name_starts_with:
+        filters["name"] = {"$regex": f"^{name_starts_with}", "$options": "i"}
+    elif name_ends_with:
+        filters["name"] = {"$regex": f"{name_ends_with}$", "$options": "i"}
+        
     if status:
         filters["status"] = status
 
