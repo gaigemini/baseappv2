@@ -67,7 +67,7 @@ async def update_change_password(req: Request, cu: CurrentUser = Depends(get_cur
 
     req = await parse_request_body(req, model.ChangePassword)
     response = _crud.change_password(req)
-    return ApiResponse(status=0, message="Data updated", data=response)
+    return ApiResponse(status=0, message="Password has change", data=response)
 
 @router.put("/reset_password/{user_id}", response_model=ApiResponse)
 @cbor_or_json
@@ -82,9 +82,9 @@ async def update_reset_passowrd(user_id: str, req: Request, cu: CurrentUser = De
         user_agent=cu.user_agent   # Jika ada
     )
     
-    req = await parse_request_body(req, model.ChangePassword)
+    req = await parse_request_body(req, model.ResetPassword)
     response = _crud.reset_password(user_id,req)
-    return ApiResponse(status=0, message="Data updated", data=response)
+    return ApiResponse(status=0, message="Password has change", data=response)
 
 @router.get("", response_model=ApiResponse)
 @cbor_or_json

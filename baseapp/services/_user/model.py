@@ -43,3 +43,8 @@ class ChangePassword(BaseModel):
     old_password: str = Field(description="Old password.", default=None)
     new_password: str = Field(description="New password.")
     verify_password: str = Field(description="Retype new password.")
+
+class ResetPassword(BaseModel):
+    """Representation of reset password model."""
+    new_password: str = Field(description="New password.")
+    verify_password: str = Field(description="Retype new password.")

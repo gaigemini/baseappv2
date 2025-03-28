@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from baseapp.model.common import Status, OTP_BASE_KEY
 from baseapp.config import setting, mongodb
-from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateStatus, UpdateRoles, UpdateByAdmin, ChangePassword
+from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateStatus, UpdateRoles, UpdateByAdmin, ChangePassword, ResetPassword
 
 from baseapp.services.audit_trail_service import AuditTrailService
 
@@ -471,7 +471,7 @@ class CRUD:
                 self.logger.exception(f"Error updating status: {str(e)}")
                 raise
 
-    def reset_password(self, user_id:str , data: ChangePassword):
+    def reset_password(self, user_id:str , data: ResetPassword):
         """
         Reset password
         """
