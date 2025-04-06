@@ -539,6 +539,15 @@ class CRUD:
                 # Apply filters
                 query_filter = filters or {}
 
+                # Handle role filter specifically
+                if 'roles' in query_filter:
+                    # Jika roles adalah string, konversi ke format $in
+                    if isinstance(query_filter['roles'], str):
+                        query_filter['roles'] = {"$in": [query_filter['roles']]}
+                    # Jika roles adalah list, gunakan $in
+                    elif isinstance(query_filter['roles'], list):
+                        query_filter['roles'] = {"$in": query_filter['roles']}
+
                 # Pagination
                 skip = (page - 1) * per_page
                 limit = per_page

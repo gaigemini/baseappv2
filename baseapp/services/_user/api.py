@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Depends, Request
-from typing import Optional
+from typing import Optional, List
 
 from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
@@ -97,7 +97,8 @@ async def get_all_data(
         username_contains: str = Query(None, description="Name contains (case insensitive)"),
         email: Optional[str] = Query(None, description="Filter by email"),
         email_contains: Optional[str] = Query(None, description="Filter by email (case insensitive)"),
-        role: Optional[str] = Query(None, description="Filter by roles"),
+        role: Optional[str] = Query(None, description="Filter by role ID"),
+        roles: Optional[List[str]] = Query(None, description="Filter by multiple role IDs"),
         status: Optional[str] = Query(None, description="Filter by status"),
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
@@ -123,7 +124,7 @@ async def get_all_data(
     if username:
         filters["username"] = username
     elif username_contains:
-        filters["name"] = {"$regex": f".*{username_contains}.*", "$options": "i"}
+        filters["username"] = {"$regex": f".*{username_contains}.*", "$options": "i"}
 
     if email:
         filters["email"] = email
@@ -132,8 +133,14 @@ async def get_all_data(
 
     if status:
         filters["status"] = status
+    
+    # Filter by single role
     if role:
         filters["roles"] = role
+    
+    # Filter by multiple roles
+    if roles:
+        filters["roles"] = roles  # Akan diubah ke $in dalam CRUD
 
     # Call CRUD function
     response = _crud.get_all(
