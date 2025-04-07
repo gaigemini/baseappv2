@@ -88,6 +88,8 @@ async def get_all_data(
     
     if module:
         filters["mod"] = module
+        if module == "_enum" or module == "dmsDataType": 
+            del filters["org_id"]
 
     # Call CRUD function
     response = _crud.get_all(

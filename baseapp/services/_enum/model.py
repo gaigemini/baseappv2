@@ -13,6 +13,7 @@ class Enum(BaseModel):
     code: str = Field(description="App of the enum data.")
     type: Literal["hardcoded","user"] = Field(description="Type of the enum data is hardcoded or user")
     value: Union[str,int,CustomDataModel]
+    sort: int = Field(description="Sort of the enum data.")
     
     @field_validator("id")
     def validate_id(cls, value):
@@ -28,3 +29,4 @@ class EnumUpdate(BaseModel):
     code: str = Field(description="App of the enum data.")
     type: Literal["hardcoded","user"] = Field(description="Type of the enum data is hardcoded or user")
     value: Union[str,int,CustomDataModel]
+    sort: int = Field(description="Sort of the enum data.")

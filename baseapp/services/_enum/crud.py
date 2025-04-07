@@ -230,6 +230,8 @@ class CRUD:
                     "code":1,
                     "type":1,
                     "value":1,
+                    "sort":1,
+                    "parent_mod":1,
                     "_id": 0
                 }
 
@@ -237,6 +239,42 @@ class CRUD:
                 pipeline = [
                     {"$match": query_filter},  # Filter stage
                     {"$sort": {sort_field: order}},  # Sorting stage
+                    # Lookup to self for parent-child relationship
+                    {
+                        "$lookup": {
+                            "from": self.collection_name,  # Lookup to the same collection
+                            "let": {"mod_id": "$mod"},  # Define variable from current doc
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$eq": ["$_id", "$$mod_id"]  # Match where _id == current doc's mod
+                                        }
+                                    }
+                                },
+                                {
+                                    "$project": {  # Only include needed fields
+                                        "id": "$_id",
+                                        "app": 1,
+                                        "mod": 1,
+                                        "code": 1,
+                                        "type": 1,
+                                        "value": 1,
+                                        "sort": 1,
+                                        "_id": 0
+                                    }
+                                }
+                            ],
+                            "as": "parent_mod"
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "parent_mod": {
+                                "$arrayElemAt": ["$parent_mod", 0]  # Convert array to single object
+                            }
+                        }
+                    },
                     {"$skip": skip},  # Pagination skip stage
                     {"$limit": limit},  # Pagination limit stage
                     {"$project": selected_fields}  # Project only selected fields
