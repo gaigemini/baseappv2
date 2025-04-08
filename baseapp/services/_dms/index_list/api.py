@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends, Request
 
-from baseapp.model.common import ApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
 from baseapp.utils.jwt import get_current_user
 from baseapp.utils.utility import cbor_or_json, parse_request_body
 
@@ -110,3 +110,23 @@ async def find_by_id(index_id: str, cu: CurrentUser = Depends(get_current_user))
     response = _crud.get_by_id(index_id)
     return ApiResponse(status=0, message="Data found", data=response)
 
+@router.delete("/delete/{index_id}", response_model=ApiResponse)
+@cbor_or_json
+async def update_status(index_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "_dmsindexlist", 4):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    # Buat instance model langsung
+    manual_data = UpdateStatus(
+        id=index_id,
+        status=Status.DELETED  # nilai yang Anda tentukan
+    )
+    response = _crud.update_status(index_id,manual_data)
+    return ApiResponse(status=0, message="Data deleted", data=response)

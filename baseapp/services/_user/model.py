@@ -33,11 +33,6 @@ class UpdateRoles(BaseModel):
     id: str = Field(description="Id of the user.")
     roles: List[str] = Field(description="Roles of the user")
 
-class UpdateStatus(BaseModel):
-    """Representation of update status model."""
-    id: str = Field(description="Id of the user.")
-    status: Status = Field(description="Status of the user.")
-
 class ChangePassword(BaseModel):
     """Representation of change password model."""
     old_password: str = Field(description="Old password.", default=None)

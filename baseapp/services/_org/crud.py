@@ -8,15 +8,15 @@ from typing import Optional, Dict, Any
 
 from baseapp.config import setting, mongodb
 from baseapp.services._org import model
-from baseapp.model.common import Status
+from baseapp.model.common import UpdateStatus
 from baseapp.utils.utility import hash_password, get_enum
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
-logger = logging.getLogger()
 
 class CRUD:
     def __init__(self):
+        self.logger = logging.getLogger()
         self.collection_org = "_organization"
         self.collection_user = "_user"
         self.collection_role = "_role"
@@ -71,10 +71,10 @@ class CRUD:
                 
                 # insert owner data to the table
                 result = collection.insert_one(org_data)
-                logger.info(f"Owner created with id: {result.inserted_id}")
+                self.logger.info(f"Owner created with id: {result.inserted_id}")
 
                 # insert owner role data to the table
-                obj_role = model.Role(name="Admin",org_id=result.inserted_id)
+                obj_role = model.Role(name="Admin",org_id=result.inserted_id,status="ACTIVE")
                 init_role = self.init_role(org_data,role_data=obj_role)
 
                 # insert user data to the table
@@ -82,13 +82,13 @@ class CRUD:
                 init_user = self.init_user(org_data, user_data)
                 return {"org":org_data,"user":init_user}
             except DuplicateKeyError:
-                logger.error("Duplicate ID detected.")
+                self.logger.error("Duplicate ID detected.")
                 raise ValueError("the same ID already exists.")
             except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+                self.logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while init owner.") from pme
             except Exception as e:
-                logger.exception(f"Unexpected error occurred while init owner: {e}")
+                self.logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise
     
     def init_partner_client_org(self, org_data: model.Organization, user_data: model.User):
@@ -129,10 +129,10 @@ class CRUD:
                 
                 # insert owner data to the table
                 result = collection.insert_one(org_data)
-                logger.info(f"Partner created with id: {result.inserted_id}")
+                self.logger.info(f"Partner created with id: {result.inserted_id}")
 
                 # insert owner role data to the table
-                obj_role = model.Role(name="Admin",org_id=result.inserted_id)
+                obj_role = model.Role(name="Admin",org_id=result.inserted_id,status="ACTIVE")
                 init_role = self.init_role(org_data,role_data=obj_role)
 
                 # insert user data to the table
@@ -140,7 +140,7 @@ class CRUD:
                 init_user = self.init_user(org_data, user_data)
                 return {"org":org_data,"user":init_user}
             except DuplicateKeyError:
-                logger.error("Duplicate ID detected.")
+                self.logger.error("Duplicate ID detected.")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -153,7 +153,7 @@ class CRUD:
                 )
                 raise ValueError("the same ID already exists.")
             except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+                self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -166,7 +166,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while init partner.") from pme
             except Exception as e:
-                logger.exception(f"Unexpected error occurred while init partner: {e}")
+                self.logger.exception(f"Unexpected error occurred while init partner: {e}")
                 raise
 
     def init_role(self, org_data, role_data:model.Role):
@@ -184,14 +184,14 @@ class CRUD:
 
         try:
             result = collection.insert_one(role_data)
-            logger.info(f"Role created with id: {result.inserted_id}")
+            self.logger.info(f"Role created with id: {result.inserted_id}")
 
             # trigger insert role on featuers
             self.init_role_in_feature(org_data,result.inserted_id)
 
             return role_data
         except PyMongoError as pme:
-            logger.error(f"Database error occurred while init role of owner: {str(pme)}")
+            self.logger.error(f"Database error occurred while init role of owner: {str(pme)}")
             # write audit trail for fail
             self.audit_trail.log_audittrail(
                 self.mongo,
@@ -204,7 +204,7 @@ class CRUD:
             )
             raise
         except Exception as e:
-            logger.exception(f"Unexpected error occurred while init owner: {e}")
+            self.logger.exception(f"Unexpected error occurred while init owner: {e}")
             raise
 
     def init_role_in_feature(self, org_data, role_id):
@@ -233,11 +233,11 @@ class CRUD:
                     "permission": totalBitRA-feature["negasiperm"][str(org_data['authority'])]
                 })
             collection.insert_many(initial_data, ordered=False)
-            logger.info(f"Inserted {len(initial_data)} documents into _featureonrole")
+            self.logger.info(f"Inserted {len(initial_data)} documents into _featureonrole")
             
             return initial_data
         except PyMongoError as pme:
-            logger.error(f"Database error occurred while init role feature of owner.: {str(pme)}")
+            self.logger.error(f"Database error occurred while init role feature of owner.: {str(pme)}")
             # write audit trail for fail
             self.audit_trail.log_audittrail(
                 self.mongo,
@@ -250,7 +250,7 @@ class CRUD:
             )
             raise
         except Exception as e:
-            logger.exception(f"Unexpected error occurred while init owner: {e}")
+            self.logger.exception(f"Unexpected error occurred while init owner: {e}")
             raise
 
     def init_user(self, org_data, user_data):
@@ -271,7 +271,7 @@ class CRUD:
 
         try:
             result = collection.insert_one(user_data)
-            logger.info(f"User created with id: {result.inserted_id}")
+            self.logger.info(f"User created with id: {result.inserted_id}")
             return {
                 "username":user_data["username"],
                 "email":user_data["email"],
@@ -279,7 +279,7 @@ class CRUD:
                 "roles":user_data["roles"]
             }
         except PyMongoError as pme:
-            logger.error(f"Database error occurred while init user.: {str(pme)}")
+            self.logger.error(f"Database error occurred while init user.: {str(pme)}")
             # write audit trail for fail
             self.audit_trail.log_audittrail(
                 self.mongo,
@@ -292,7 +292,7 @@ class CRUD:
             )
             raise
         except Exception as e:
-            logger.exception(f"Unexpected error occurred while init user: {e}")
+            self.logger.exception(f"Unexpected error occurred while init user: {e}")
             raise
 
     def get_by_id(self, org_id: str):
@@ -394,6 +394,62 @@ class CRUD:
                 self.logger.exception(f"Error updating role: {str(e)}")
                 raise
     
+    def update_status(self, org_id: str, data: UpdateStatus):
+        """
+        Update a organization's data [status] by ID.
+        """
+        client = mongodb.MongoConn()
+        with client as mongo:
+            collection = mongo._db[self.collection_org]
+            collection_user = mongo._db[self.collection_user]
+            collection_role = mongo._db[self.collection_role]
+            obj = data.model_dump()
+            obj["mod_by"] = self.user_id
+            obj["mod_date"] = datetime.now(timezone.utc)
+            try:
+                update_org = collection.find_one_and_update({"_id": org_id}, {"$set": obj}, return_document=True)
+                if not update_org:
+                    # write audit trail for fail
+                    self.audit_trail.log_audittrail(
+                        mongo,
+                        action="update",
+                        target=self.collection_org,
+                        target_id=org_id,
+                        details={"$set": obj},
+                        status="failure",
+                        error_message="Organization not found"
+                    )
+                    raise ValueError("Organization not found")
+                update_user = collection_user.find_one_and_update({"org_id": org_id}, {"$set": obj}, return_document=True)
+                update_role = collection_role.find_one_and_update({"org_id": org_id}, {"$set": obj}, return_document=True)
+                self.logger.info(f"Organization {org_id} status updated.")
+                # write audit trail for success
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="update",
+                    target=self.collection_org,
+                    target_id=org_id,
+                    details={"$set": obj},
+                    status="success"
+                )
+                return update_org
+            except PyMongoError as pme:
+                self.logger.error(f"Database error occurred: {str(pme)}")
+                # write audit trail for fail
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="update",
+                    target=self.collection_org,
+                    target_id=org_id,
+                    details={"$set": obj},
+                    status="failure",
+                    error_message=str(pme)
+                )
+                raise ValueError("Database error occurred while update document.") from pme
+            except Exception as e:
+                self.logger.exception(f"Error updating status: {str(e)}")
+                raise
+
     def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
@@ -460,7 +516,7 @@ class CRUD:
                     },
                 }
             except PyMongoError as pme:
-                logger.error(f"Error retrieving user with filters and pagination: {str(e)}")
+                self.logger.error(f"Error retrieving user with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -472,5 +528,5 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                logger.exception(f"Unexpected error during deletion: {str(e)}")
+                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

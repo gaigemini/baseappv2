@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Query
 from typing import Optional
 
 from baseapp.config import setting
-from baseapp.model.common import ApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
 from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
@@ -160,3 +160,24 @@ async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUs
 
     response = _crud.update_by_id(org_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
+
+@router.delete("/delete/{org_id}", response_model=ApiResponse)
+@cbor_or_json
+async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "_organization", 4):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    # Buat instance model langsung
+    manual_data = UpdateStatus(
+        id=org_id,
+        status=Status.DELETED  # nilai yang Anda tentukan
+    )
+    response = _crud.update_status(org_id,manual_data)
+    return ApiResponse(status=0, message="Data deleted", data=response)

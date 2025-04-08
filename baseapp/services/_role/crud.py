@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
+from baseapp.model.common import UpdateStatus
 from baseapp.config import setting, mongodb
 from baseapp.services._role.model import Role
 from baseapp.services.audit_trail_service import AuditTrailService
@@ -231,4 +232,56 @@ class CRUD:
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
                 self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                raise
+
+    def update_status(self, user_id: str, data: UpdateStatus):
+        """
+        Update a roles's data [status] by ID.
+        """
+        client = mongodb.MongoConn()
+        with client as mongo:
+            collection = mongo._db[self.collection_name]
+            obj = data.model_dump()
+            obj["mod_by"] = self.user_id
+            obj["mod_date"] = datetime.now(timezone.utc)
+            try:
+                update_role = collection.find_one_and_update({"_id": user_id}, {"$set": obj}, return_document=True)
+                if not update_role:
+                    # write audit trail for fail
+                    self.audit_trail.log_audittrail(
+                        mongo,
+                        action="update",
+                        target=self.collection_name,
+                        target_id=user_id,
+                        details={"$set": obj},
+                        status="failure",
+                        error_message="Role not found"
+                    )
+                    raise ValueError("Role not found")
+                self.logger.info(f"Role {user_id} status updated.")
+                # write audit trail for success
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="update",
+                    target=self.collection_name,
+                    target_id=user_id,
+                    details={"$set": obj},
+                    status="success"
+                )
+                return update_role
+            except PyMongoError as pme:
+                self.logger.error(f"Database error occurred: {str(pme)}")
+                # write audit trail for fail
+                self.audit_trail.log_audittrail(
+                    mongo,
+                    action="update",
+                    target=self.collection_name,
+                    target_id=user_id,
+                    details={"$set": obj},
+                    status="failure",
+                    error_message=str(pme)
+                )
+                raise ValueError("Database error occurred while update document.") from pme
+            except Exception as e:
+                self.logger.exception(f"Error updating status: {str(e)}")
                 raise

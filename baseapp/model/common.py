@@ -55,3 +55,8 @@ class LogError(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
+
+class UpdateStatus(BaseModel):
+    """Representation of update status model."""
+    id: str = Field(description="Id of the data.")
+    status: Status = Field(description="Status of the data.")

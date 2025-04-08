@@ -5,9 +5,9 @@ from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
-from baseapp.model.common import Status, OTP_BASE_KEY
+from baseapp.model.common import Status, OTP_BASE_KEY, UpdateStatus
 from baseapp.config import setting, mongodb
-from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateStatus, UpdateRoles, UpdateByAdmin, ChangePassword, ResetPassword
+from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateRoles, UpdateByAdmin, ChangePassword, ResetPassword
 
 from baseapp.services.audit_trail_service import AuditTrailService
 
@@ -306,7 +306,7 @@ class CRUD:
                         error_message="User not found"
                     )
                     raise ValueError("User not found")
-                self.logger.info(f"User {user_id} updated successfully.")
+                self.logger.info(f"User {user_id} roles updated.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -358,7 +358,7 @@ class CRUD:
                         error_message="User not found"
                     )
                     raise ValueError("User not found")
-                self.logger.info(f"User {user_id} updated successfully.")
+                self.logger.info(f"User {user_id} status updated.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -423,7 +423,7 @@ class CRUD:
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                user_info = self._validate_user(mongo,data.old_password)
+                validate_old_password = self._validate_user(mongo,data.old_password)
 
                 password = is_none(data.new_password, generate_password())
                 salt, hashed_password = hash_password(password)
