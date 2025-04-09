@@ -58,7 +58,8 @@ async def get_all_data(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: CurrentUser = Depends(get_current_user),
-        name: str = Query(None, description="Name doctype (supports LIKE, e.g., 'regex:pattern')"),
+        name: str = Query(None, description="Filter by name"),
+        name_contains: str = Query(None, description="Name contains (case insensitive)"),
         status: str = Query(None, description="Status doctype")
     ) -> ApiResponse:
 
@@ -82,8 +83,11 @@ async def get_all_data(
     if status:
         filters["status"] = status
 
+    # addtional when filter running
     if name:
-        filters["name"] = f"regex:{name}"
+        filters["name"] = name
+    elif name_contains:
+        filters["name"] = {"$regex": f".*{name_contains}.*", "$options": "i"}
 
     # Call CRUD function
     response = _crud.get_all(

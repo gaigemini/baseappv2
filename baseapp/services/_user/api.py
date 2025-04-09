@@ -115,7 +115,7 @@ async def get_all_data(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         username: Optional[str] = Query(None, description="Filter by username"),
-        username_contains: str = Query(None, description="Name contains (case insensitive)"),
+        username_contains: Optional[str] = Query(None, description="Username contains (case insensitive)"),
         email: Optional[str] = Query(None, description="Filter by email"),
         email_contains: Optional[str] = Query(None, description="Filter by email (case insensitive)"),
         role: Optional[str] = Query(None, description="Filter by role ID"),
