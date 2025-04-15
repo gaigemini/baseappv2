@@ -132,7 +132,7 @@ async def get_all_data(
 @router.get("/find/{org_id}", response_model=ApiResponse)
 @cbor_or_json
 async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_organization", 1):  # 1 untuk izin baca
+    if not (permission_checker.has_permission(cu.roles, "_organization", 1) or permission_checker.has_permission(cu.roles, "_myorg", 1)):  # 1 untuk izin baca
         raise PermissionError("Access denied")
     
     _crud.set_context(
@@ -148,7 +148,7 @@ async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -
 @router.put("/update/{org_id}", response_model=ApiResponse)
 @cbor_or_json
 async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_organization", 4):  # 4 untuk izin simpan perubahan
+    if not (permission_checker.has_permission(cu.roles, "_organization", 4) or permission_checker.has_permission(cu.roles, "_myorg", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
     _crud.set_context(

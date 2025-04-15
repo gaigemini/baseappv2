@@ -152,6 +152,16 @@
                 "authority": 7
             },
             {
+                "id": "_myprofile",
+                "feature_name": "_myprofile",
+                "negasiperm": {
+                    "1": 250,
+                    "2": 250,
+                    "4": 250
+                },
+                "authority": 7
+            },
+            {
                 "id": "_dmsindexlist",
                 "feature_name": "_dmsindexlist",
                 "negasiperm": {
