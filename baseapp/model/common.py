@@ -19,6 +19,8 @@ class CurrentUser(BaseModel):
     org_id: str
     token: str
     authority: int
+    features: Optional[dict] = None
+    bitws: Optional[dict] = None
     log_id: Optional[str] = None
     ip_address: Optional[str] = None
     user_agent : Optional[str] = None

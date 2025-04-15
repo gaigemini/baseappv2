@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_env:str
     host:str
     port:int
+    domain:str
     
     # jwt
     jwt_secret_key:str
