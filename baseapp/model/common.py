@@ -62,3 +62,7 @@ class UpdateStatus(BaseModel):
     """Representation of update status model."""
     id: str = Field(description="Id of the data.")
     status: Status = Field(description="Status of the data.")
+
+class DMSOperationType(str, Enum):
+    TO_TRASH = "to_trash"
+    RESTORE = "restore"

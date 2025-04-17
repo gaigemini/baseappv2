@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, Request
 
-from baseapp.model.common import ApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser, DMSOperationType
 from baseapp.utils.jwt import get_current_user
-from baseapp.utils.utility import cbor_or_json
+from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
+
+from baseapp.services._dms.upload.model import MoveToTrash
 
 from baseapp.services._dms.browse.crud import CRUD
 _crud = CRUD()
@@ -115,7 +117,15 @@ async def list_file_by_folder_id(
         filters["org_id"] = cu.org_id
 
     if folder_id:
-        filters["folder_id"] = folder_id
+        if folder_id == "delete":
+            filters["is_deleted"] = 1
+        else:
+            filters["folder_id"] = folder_id
+            # Tambahkan filter untuk is_deleted = 0 atau tidak ada
+            filters["$or"] = [
+                {"is_deleted": 0},
+                {"is_deleted": {"$exists": False}}
+            ]
 
     # Call CRUD function
     response = _crud.list_file(
@@ -146,3 +156,59 @@ async def storage(
     # Call CRUD function
     response = _crud.check_storage()
     return ApiResponse(status=0, message="Data loaded", data=response)
+
+@router.put("/sent_file/{operation_type}/{file_id}", response_model=ApiResponse)
+@cbor_or_json
+async def set_status_file(operation_type: DMSOperationType, file_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    """Update file status (move to trash or restore)"""
+    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 4):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    # Perbarui konteks pengguna untuk AuditTrail
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+
+    # Determine operation
+    is_deleted = 1 if operation_type == DMSOperationType.TO_TRASH else 0
+    operation = MoveToTrash(is_deleted=is_deleted)
+
+    response = _crud.move_to_trash_restore(file_id,operation)
+    return ApiResponse(status=0, message="Data updated", data=response)
+
+@router.delete("/delete_file/{file_id}", response_model=ApiResponse)
+@cbor_or_json
+async def delete_by_id(file_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 8):  # 8 untuk izin hapus
+        raise PermissionError("Access denied")
+    
+    # Perbarui konteks pengguna untuk AuditTrail
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    response = _crud.delete_file_by_id(file_id)
+    return ApiResponse(status=0, message="File deleted", data=response)
+
+@router.delete("/delete_folder/{folder_id}", response_model=ApiResponse)
+@cbor_or_json
+async def delete_by_id(folder_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 8):  # 8 untuk izin hapus
+        raise PermissionError("Access denied")
+    
+    # Perbarui konteks pengguna untuk AuditTrail
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    response = _crud.delete_folder_by_id(folder_id)
+    return ApiResponse(status=0, message="Folder deleted", data=response)

@@ -147,7 +147,7 @@ async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -
 
 @router.put("/update/{org_id}", response_model=ApiResponse)
 @cbor_or_json
-async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_organization", 4) or permission_checker.has_permission(cu.roles, "_myorg", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -158,6 +158,7 @@ async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUs
         user_agent=cu.user_agent   # Jika ada
     )
 
+    req = await parse_request_body(req, model.OrganizationUpdate)
     response = _crud.update_by_id(org_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 

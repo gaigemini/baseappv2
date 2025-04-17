@@ -13,3 +13,6 @@ class SetMetaData(BaseModel):
     refkey_id: Optional[str] = Field(default=None, description="Reference ID")
     refkey_table: Optional[str] = Field(default=None, description="Reference table")
     refkey_name: Optional[str] = Field(default=None, description="Reference name|label|anthing")
+
+class MoveToTrash(BaseModel):
+    is_deleted: int = Field(default=0, description="Deletion status: 1 = deleted, 0 = not deleted")
