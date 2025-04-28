@@ -24,15 +24,18 @@ router = APIRouter(prefix="/v1/_organization", tags=["Organization"])
 
 @router.post("/init_owner", response_model=ApiResponse)
 @cbor_or_json
-async def init_owner(req: Request) -> ApiResponse:
+# async def create(org: model.Organization, user:model.User) -> ApiResponse:
+async def create(req: Request) -> ApiResponse:
     request_body = await parse_request_body(req, model.InitRequest)
 
     response = _crud.init_owner_org(request_body.org, request_body.user)
+    # response = _crud.init_owner_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_partner", response_model=ApiResponse)
 @cbor_or_json
-async def init_partner(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -49,13 +52,16 @@ async def init_partner(req: Request, cu: CurrentUser = Depends(get_current_user)
 
     request_body = await parse_request_body(req, model.InitRequest)
     request_body.org.authority = 2
+    # org.authority = 2
 
     response = _crud.init_partner_client_org(request_body.org, request_body.user)
+    # response = _crud.init_partner_client_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_client", response_model=ApiResponse)
 @cbor_or_json
-async def init_client(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -73,7 +79,10 @@ async def init_client(req: Request, cu: CurrentUser = Depends(get_current_user))
     request_body = await parse_request_body(req, model.InitRequest)
     request_body.org.authority = 4
 
+    # org.authority = 4
+
     response = _crud.init_partner_client_org(request_body.org, request_body.user)
+    # response = _crud.init_partner_client_org(org,user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.get("", response_model=ApiResponse)
@@ -84,9 +93,6 @@ async def get_all_data(
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         org_name: Optional[str] = Query(None, description="Filter by organization name"),
-        org_name_contains: str = Query(None, description="Organization name contains (case insensitive)"),
-        org_name_starts_with: str = Query(None, description="Organization name starts with"),
-        org_name_ends_with: str = Query(None, description="Organization name ends with"),
         status: Optional[str] = Query(None, description="Filter by status"),
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
@@ -109,13 +115,6 @@ async def get_all_data(
     # addtional when filter running
     if org_name:
         filters["org_name"] = org_name
-    elif org_name_contains:
-        filters["name"] = {"$regex": f".*{org_name_contains}.*", "$options": "i"}
-    elif org_name_starts_with:
-        filters["name"] = {"$regex": f"^{org_name_starts_with}", "$options": "i"}
-    elif org_name_ends_with:
-        filters["name"] = {"$regex": f"{org_name_ends_with}$", "$options": "i"}
-
     if status:
         filters["status"] = status
 
@@ -182,3 +181,14 @@ async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)
     )
     response = _crud.update_status(org_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)
+
+@router.post("/is_owner_exist", response_model=ApiResponse)
+@cbor_or_json
+async def check_owner_exist() -> ApiResponse:
+    owner_exists = _crud.is_owner_exist()
+    message = ""
+    if owner_exists:
+        message="Owner exists in the system"
+    else:
+        message="No owner found in the system"
+    return ApiResponse(status=0, message=message, data=owner_exists)

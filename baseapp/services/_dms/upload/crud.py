@@ -86,7 +86,7 @@ class CRUD:
         for folder in folderToArr:
             levelFolder += 1
             folderName = folder.strip()
-            folderName = re.sub('[^a-zA-Z0-9_ \n\.]', '', folderName)
+            folderName = re.sub(r'[^a-zA-Z0-9_ \n\.]', '', folderName)
 
             # Determine the folder name from metadata or default value
             if folderName not in metaData_:

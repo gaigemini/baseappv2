@@ -30,6 +30,7 @@ async def get_org_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRes
                 headers=headers,
                 timeout=30
             )
+            logger.debug(f"respon org profile: {response.raise_for_status()}")
             response.raise_for_status()
             if config.app_env == "production":
                 abcd = cbor2.loads(response.content)
@@ -80,4 +81,3 @@ async def get_user_profile(cu: CurrentUser = Depends(get_current_user)) -> ApiRe
                 return ApiResponse.model_validate(abcd)
             else:
                 return ApiResponse.model_validate_json(exc.response.text)
-    

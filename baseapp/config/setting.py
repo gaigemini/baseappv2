@@ -62,6 +62,12 @@ class Settings(BaseSettings):
 
     file_location: str
 
+    # google
+    google_api_key: str
+    google_client_id: str
+    google_client_secret: str
+    google_redirect_uri: str
+
     # Determine the env file based on the ENV environment variable
     env_file: ClassVar[str] = (
         # print(os.getenv('ENV'))

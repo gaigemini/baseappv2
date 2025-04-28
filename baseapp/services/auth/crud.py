@@ -2,7 +2,7 @@ import logging
 from hmac import compare_digest
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo
-from baseapp.model.common import Status, OTP_BASE_KEY
+from baseapp.model.common import Status, REDIS_QUEUE_BASE_KEY
 from baseapp.utils.utility import hash_password, get_enum
 
 config = setting.get_settings()
@@ -91,8 +91,8 @@ class CRUD:
         user_info["bitws"]=self.get_role_action()
         user_info["feature"]=self.get_feature(user_info["roles"])
         return user_info
-    
-    def validate_user(self, username, password) -> UserInfo:
+
+    def validate_user(self, username, password=None) -> UserInfo:
         user_info = self.find_user(username)
         authority = self.check_org(user_info["org_id"])
 
@@ -101,5 +101,14 @@ class CRUD:
             for key in ["_id", "username", "org_id", "password", "salt", "roles", "status", "bitws", "feature"]
         }
         user_data["authority"] = authority
-
-        return self.validate_password(user_data, password)
+        if password is None:
+            return UserInfo(
+                id=user_data["_id"], 
+                org_id=user_data["org_id"], 
+                roles=user_data["roles"], 
+                authority=user_data["authority"],
+                bitws=user_data["bitws"],
+                feature=user_data["feature"]
+            )
+        else:
+            return self.validate_password(user_data, password)

@@ -10,7 +10,7 @@ class Enum(BaseModel):
     id: Optional[Union[UUID, str]] = Field(None, description="Custom ID")
     app: str = Field(description="App of the enum data.")
     mod: str = Field(description="Module of the enum data.")
-    code: str = Field(description="App of the enum data.")
+    code: str = Field(description="Code of the enum data.")
     type: Literal["hardcoded","user"] = Field(description="Type of the enum data is hardcoded or user")
     value: Union[str,int,CustomDataModel]
     sort: int = Field(description="Sort of the enum data.")

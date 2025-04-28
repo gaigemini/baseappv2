@@ -24,7 +24,6 @@ class CBORResponse(Response):
         super().__init__(content=cbor_content, media_type="application/cbor", status_code=status_code, **kwargs)
 
 def process_mongodb_data(data):
-    
     if isinstance(data, dict):
         # Jika data adalah dictionary, proses semua nilai dalam dictionary
         if 'data' in data:
@@ -41,8 +40,12 @@ def process_mongodb_data(data):
         return data.isoformat()  # Mengubah ke string ISO 8601
     return data
 
-def get_response_based_on_env(response_model: BaseModel, status_code: int = 200):
-    if config.app_env == "production":
+def get_response_based_on_env(response_model: BaseModel, status_code: int = 200, request: Request = None):
+    # Periksa flag force_json
+    force_json = hasattr(request, 'state') and getattr(request.state, 'force_json', False)
+    logger.debug(f"Force JSON status [utility]: {force_json}")
+    
+    if config.app_env == "production" and not force_json:
         return CBORResponse(content=response_model, status_code=status_code)
     else:
         return JSONResponse(content=response_model.model_dump(mode="json"), status_code=status_code)
@@ -52,10 +55,17 @@ def cbor_or_json(func):
     async def wrapper(*args, **kwargs):
         # Jalankan fungsi asli untuk mendapatkan hasil
         result = await func(*args, **kwargs)
-        
         # Tentukan format respons
         return get_response_based_on_env(response_model=result)
-    
+    return wrapper
+
+def json_only(func):
+    @wraps(func)
+    async def wrapper(request: Request = None, *args, **kwargs):
+        if request:
+            request.state.force_json = True  # Force JSON
+        result = await func(request, *args, **kwargs)
+        return JSONResponse(content=result.model_dump(mode="json"))
     return wrapper
 
 async def parse_request_body(request: Request, model):

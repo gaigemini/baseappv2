@@ -23,4 +23,3 @@ async def init_database() -> ApiResponse:
 async def init_database() -> ApiResponse:
     response = _crud.create_bucket()
     return ApiResponse(status=0, message="Bucket created", data=not response)
-

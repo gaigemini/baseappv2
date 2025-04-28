@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 import logging
 import random
 
-from baseapp.model.common import ApiResponse, OTP_BASE_KEY, TokenResponse, CurrentUser
+from baseapp.model.common import ApiResponse, REDIS_QUEUE_BASE_KEY, TokenResponse, CurrentUser
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
@@ -18,7 +18,6 @@ router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
 async def login(response: Response, req: UserLoginModel) -> ApiResponse:
-    logger.debug(f"data login: {req}")
     username = req.username
     password = req.password
 
@@ -87,7 +86,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     with RedisConn() as redis_conn:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
-    queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
+    queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)
     queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
 
     # Return response berhasil
@@ -100,7 +99,7 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
 
     # Validasi user
     with _crud:
-        user_info = _crud.find_user(username)
+        user_info = _crud.validate_user(username)
 
     # Simpan refresh token ke Redis
     with RedisConn() as redis_conn:
@@ -109,12 +108,12 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
             # Data token
             token_data = {
                 "sub": username,
-                "id": user_info.get("id"),
-                "roles": user_info.get("roles"),
-                "authority": user_info.get("authority"),
-                "org_id": user_info.get("org_id"),
-                "features": user_info.get("feature"),
-                "bitws": user_info.get("bitws")
+                "id": user_info.id,
+                "roles": user_info.roles,
+                "authority": user_info.authority,
+                "org_id": user_info.org_id,
+                "features": user_info.feature,
+                "bitws": user_info.bitws
             }
 
             # Buat akses token dan refresh token
@@ -218,13 +217,11 @@ async def refresh_token(request: Request) -> ApiResponse:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise ValueError("Refresh token missing")
-        # return get_response_based_on_env(ApiResponse(status=4, message="Refresh token missing"), app_env=config.app_env)
     
     # Decode refresh token
     payload = decode_jwt_token(refresh_token)
     if not payload:
         raise ValueError("Invalid refresh token")
-        # return get_response_based_on_env(ApiResponse(status=4, message="Invalid refresh token"), app_env=config.app_env)
 
     # Check token in Redis
     with RedisConn() as redis_conn:
@@ -263,9 +260,8 @@ async def logout(request: Request, response: Response) -> ApiResponse:
     return ApiResponse(status=0, message="Logout")
 
 @router.post("/status", response_model=ApiResponse)
-async def auth_status(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def auth_status(request: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     # Convert to dict and exclude fields
     cu_data = cu.model_dump(exclude={"log_id", "ip_address", "user_agent", "token"})
-
     # Return response berhasil
     return ApiResponse(status=0, data=cu_data)

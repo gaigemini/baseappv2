@@ -6,7 +6,7 @@ config = setting.get_settings()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from baseapp.model.common import OTP_BASE_KEY
+from baseapp.model.common import REDIS_QUEUE_BASE_KEY
 from baseapp.services.middleware import setup_middleware
 
 os.makedirs("log", exist_ok=True) # create log folder
@@ -31,13 +31,14 @@ from baseapp.services._dms.upload.api import router as upload_router # upload dm
 from baseapp.services._dms.browse.api import router as browse_router # browse dms
 from baseapp.services._feature.api import router as feature_router # feature and role
 from baseapp.services._forgot_password.api import router as forgot_password_router # forgot password
-from baseapp.services.gai_ai.api import router as gai_ai_router # GAI AI
+# from baseapp.services.gai_ai.api import router as gai_ai_router # GAI AI
+from baseapp.services.oauth_google.api import router as oauth_google_router # Oauth Google
 
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services.redis_worker import RedisWorker
 
 # Redis connection and queue configuration
-queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)
+queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)
 
 # Worker setup
 worker = RedisWorker(queue_manager)
@@ -68,7 +69,8 @@ app.include_router(upload_router)
 app.include_router(browse_router)
 app.include_router(feature_router)
 app.include_router(forgot_password_router)
-app.include_router(gai_ai_router)
+# app.include_router(gai_ai_router)
+app.include_router(oauth_google_router)
 
 allowed_origins = [
     "http://localhost:53464",

@@ -6,7 +6,7 @@ class UploadFile(BaseModel):
     filestat: Dict = Field(description="Object filename. ")
     folder_id: str = Field(description="Reference folder ID")
     folder_path: Optional[str] = Field(description="Structure folder")
-
+    
 class SetMetaData(BaseModel):
     doctype: str = Field(description="Reference doctype id")
     metadata: Optional[Dict] = Field(default=None, description="Type of index")

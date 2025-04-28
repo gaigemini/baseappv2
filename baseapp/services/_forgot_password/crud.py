@@ -1,7 +1,7 @@
 import logging, random, uuid
 from datetime import datetime, timezone
 
-from baseapp.model.common import OTP_BASE_KEY, Status
+from baseapp.model.common import REDIS_QUEUE_BASE_KEY, Status
 from baseapp.config import setting, mongodb
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
@@ -17,7 +17,7 @@ class CRUD:
     def __init__(self):
         self.logger = logging.getLogger()
         self.redis_conn = RedisConn()
-        self.queue_manager = RedisQueueManager(queue_name=OTP_BASE_KEY)  # Pass actual RedisConn here
+        self.queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)  # Pass actual RedisConn here
 
     def is_valid_user(self,username: str) -> bool:
         client = mongodb.MongoConn()

@@ -66,7 +66,9 @@ class CRUD:
                         "folder_path": 1,
                         "metadata": 1,
                         "doctype": 1,
+                        "refkey_table": 1,
                         "refkey_name": 1,
+                        "refkey_id": 1,
                         "_id": 0
                     }
 
@@ -90,23 +92,29 @@ class CRUD:
                         status="success"
                     )
                     
-                    retData = {}
-                    for x in results:
-                        retData[x['refkey_name']] = {
-                            'id':x['id'],
-                            'folder_id':x['folder_id'],
-                            'folder_path':x['folder_path'],
-                            'filename':x['filename'],
-                            'filestat':x['filestat'],
-                            'metadata':x['metadata'],
-                        }
+                    # retData = {}
+                    # for x in results:
+                    #     retData[x['refkey_name']] = {
+                    #         'id':x['id'],
+                    #         'folder_id':x['folder_id'],
+                    #         'folder_path':x['folder_path'],
+                    #         'filename':x['filename'],
+                    #         'filestat':x['filestat'],
+                    #         'metadata':x['metadata'],
+                    #     }
+                    #     # presigned url
+                    #     minio_client = conn.get_minio_client()
+                    #     url = minio_client.presigned_get_object(config.minio_bucket, x['filename'])
+                    #     retData[x['refkey_name']]['url'] = url
+
+                    for i, data in enumerate(results):
                         # presigned url
                         minio_client = conn.get_minio_client()
-                        url = minio_client.presigned_get_object(config.minio_bucket, x['filename'])
-                        retData[x['refkey_name']]['url'] = url
+                        url = minio_client.presigned_get_object(config.minio_bucket, data['filename'])
+                        data['url'] = url
 
                     return {
-                        "data": retData
+                        "data": results
                     }
                 except PyMongoError as pme:
                     self.logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
@@ -252,7 +260,9 @@ class CRUD:
                         "folder_path": 1,
                         "metadata": 1,
                         "doctype": 1,
+                        "refkey_table": 1,
                         "refkey_name": 1,
+                        "refkey_id": 1,
                         "_id": 0
                     }
 
@@ -413,7 +423,7 @@ class CRUD:
                 self.logger.exception(f"Error updating status: {str(e)}")
                 raise
 
-    def delete_file_by_id(self, file_id: str) -> Dict[str, Any]:
+    def delete_file_by_id(self, file_id: str):
         """
         Menghapus satu file dari Minio dan database MongoDB
         

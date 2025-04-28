@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
-from baseapp.model.common import Status, OTP_BASE_KEY, UpdateStatus
+from baseapp.model.common import Status, REDIS_QUEUE_BASE_KEY, UpdateStatus
 from baseapp.config import setting, mongodb
 from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateRoles, UpdateByAdmin, ChangePassword, ResetPassword
 
@@ -86,6 +86,7 @@ class CRUD:
                     "roles":1,
                     "status":1,
                     "org_id":1,
+                    "google":1,
                     "_id": 0
                 }
                 user = collection.find_one({"_id": user_id},selected_fields)

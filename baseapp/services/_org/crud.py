@@ -476,6 +476,7 @@ class CRUD:
                     "org_phone":1,
                     "org_address":1,
                     "org_desc":1,
+                    "org_email":1,
                     "status":1,
                     "_id": 0
                 }
@@ -529,4 +530,30 @@ class CRUD:
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
                 self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                raise
+
+    def is_owner_exist(self):
+        """
+        Check if an owner exists in the organization collection.
+        
+        Returns:
+            bool: True if an owner exists, False otherwise
+            
+        Raises:
+            ValueError: If there's a database error
+            Exception: For other unexpected errors
+        """
+        client = mongodb.MongoConn()
+        with client as mongo:
+            self.mongo = mongo
+            collection = mongo._db[self.collection_org]
+            try:
+                # Check if owner exists (authority=1)
+                owner_is_exist = collection.find_one({"authority":1})
+                return owner_is_exist is not None
+            except PyMongoError as pme:
+                self.logger.error(f"Database error occurred: {str(pme)}")
+                raise ValueError("Database error occurred while init owner.") from pme
+            except Exception as e:
+                self.logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise

@@ -3,7 +3,7 @@ from typing import Optional, Any, Literal, List
 from enum import Enum
 from datetime import datetime, timezone
 
-OTP_BASE_KEY: str = "otp_key"
+REDIS_QUEUE_BASE_KEY: str = "reimburse_app"
 
 class Status(str, Enum):
     """Status of a user and client"""

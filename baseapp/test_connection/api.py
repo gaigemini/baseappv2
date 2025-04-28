@@ -15,51 +15,45 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/test", tags=["Test Connection"])
 
 @router.get("/database", response_model=ApiResponse)
-@cbor_or_json
 async def test_connection_to_database(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_mongodb()
     return ApiResponse(status=0, message=resp)
 
 @router.get("/redis")
-@cbor_or_json
 async def test_connection_to_redis(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_redis()
     return ApiResponse(status=0, message=resp)
     
 @router.get("/minio")
-@cbor_or_json
 async def test_connection_to_minio(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_minio()
     return ApiResponse(status=0, message=resp)
 
 @router.get("/rabbit")
-@cbor_or_json
 async def test_connection_to_rabbit(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_rabbit()
     return ApiResponse(status=0, message=resp)
     
 @router.get("/clickhouse")
-@cbor_or_json
 async def test_connection_to_clickhouse(ctx: Request) -> ApiResponse:
     resp = test.test_connection_to_clickhouse()
     return ApiResponse(status=0, message=resp)
 
 @router.api_route("/forward/cbor/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], response_model=ApiResponse)
-async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def test_api_cbor(ctx: Request, path: str) -> ApiResponse:
     # Extract incoming request details
     method = ctx.method.upper()
     headers = dict(ctx.headers)
-    
+
     # Ambil query parameters dari request asli
     query_params = dict(ctx.query_params)
-
     forwarded_url = f"{config.host}/{path}"
-
+    
     # Jika ada query parameters, tambahkan ke URL tujuan
     if query_params:
         encoded_query = "&".join([f"{k}={v}" for k, v in query_params.items()])
         forwarded_url += f"?{encoded_query}"
-        
+
     logger.info(f"Target URL: {forwarded_url}")
 
     body = await ctx.body()
@@ -72,11 +66,11 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
         # Encode body ke CBOR
         encoded_body = cbor2.dumps(minified_body)
 
-    logger.debug(f"Informasi header: {headers}")
+    # logger.debug(f"Informasi header: {headers}")
     
     async with httpx.AsyncClient() as client:
         try:
-            # logger.debug("awal client")
+            logger.debug("awal client")
             obj_headers = {"Content-Type": "application/cbor"}
             if "authorization" in headers:
                 obj_headers["authorization"] = headers["authorization"]
@@ -87,9 +81,11 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
                 data=encoded_body,
                 timeout=30
             )
-            # logger.debug("akhir client")
-            # logger.debug(f"respon status: {response.raise_for_status()}")
-            # logger.debug(f"ini dia responsenya: {cbor2.loads(response.content)}")
+            logger.debug("akhir client")
+            logger.debug(f"request headers: {obj_headers}")
+            logger.debug(f"respon status: {response.raise_for_status()}")
+            logger.debug(f"ini dia responsenya: {response.content}")
+            # logger.debug(f"ini dia responsenya dari API: {cbor2.loads(response.content)}")
             response.raise_for_status()
             return cbor2.loads(response.content)
         except httpx.RequestError as exc:
@@ -102,4 +98,3 @@ async def test_api_cbor(ctx: Request, path: str, cu: CurrentUser = Depends(get_c
         except Exception as e:
             logger.error(f"errornya disini ya bro: {e}")
             raise ValueError(e)
-

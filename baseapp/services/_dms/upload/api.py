@@ -46,4 +46,3 @@ async def create(file: UploadFile = File(...), payload: SetMetaData = Depends(pa
     response = await _crud.upload_file_to_minio(file,payload)
     
     return ApiResponse(status=0, message="Data created", data=response)
-

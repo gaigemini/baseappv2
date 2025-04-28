@@ -27,7 +27,7 @@ class RedisConn:
             self._conn = redis.Redis(connection_pool=self.pool)
             # Validate connection
             self._conn.ping()
-            logger.info("Redis Connection Pool established.")
+            # logger.info("Redis Connection Pool established.")
             return self._conn
         except redis.ConnectionError as e:
             logger.error("Failed to initialize Redis Connection Pool: %s", e)
@@ -45,7 +45,7 @@ class RedisConn:
         if self.pool:
             try:
                 self.pool.disconnect()
-                logger.info("Redis Connection Pool closed.")
+                # logger.info("Redis Connection Pool closed.")
             except Exception as e:
                 logger.error(f"Error while closing Redis Connection Pool: {e}")
 
