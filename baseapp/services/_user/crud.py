@@ -78,6 +78,9 @@ class CRUD:
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
+                # Apply filters
+                query_filter = {"_id": user_id}
+
                 # Selected field
                 selected_fields={
                     "id": "$_id",
@@ -86,11 +89,72 @@ class CRUD:
                     "roles":1,
                     "status":1,
                     "org_id":1,
+                    "org_data":1,
                     "google":1,
                     "_id": 0
                 }
-                user = collection.find_one({"_id": user_id},selected_fields)
-                if not user:
+
+                # Aggregation pipeline
+                pipeline = [
+                    {"$match": query_filter},  # Filter stage
+                    {
+                        "$lookup": {
+                            "from": "_organization",  # The collection to join with
+                            "localField": "org_id",  # Array field in users collection
+                            "foreignField": "_id",  # Field in role_groups collection
+                            "as": "org_data"  # Output array field
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "org_data": {
+                                "$let": {
+                                    "vars": {
+                                        "firstOrg": {"$arrayElemAt": ["$org_data", 0]}
+                                    },
+                                    "in": {
+                                        "$cond": [
+                                            {"$gt": [{"$size": "$org_data"}, 0]},
+                                            {
+                                                "id": "$$firstOrg._id",
+                                                "name": "$$firstOrg.org_name",
+                                                "initial": "$$firstOrg.org_initial"
+                                            },
+                                            None
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    # {
+                    #     "$addFields": {
+                    #         "org_data": {  # Convert the array to a single object
+                    #             "$arrayElemAt": ["$org_data", 0]
+                    #         },
+                    #         "org_data": {
+                    #             "$map": {
+                    #                 "input": "$org_data",  # Changed from "$role_details" to "$roles" to match your selected fields
+                    #                 "as": "org",
+                    #                 "in": {
+                    #                     "id": "$$org._id",
+                    #                     "name": "$$org.org_name",
+                    #                     "initial": "$$org.org_initial"
+                    #                 }
+                    #             }
+                    #         }
+                    #     }
+                    # },
+                    {"$project": selected_fields}  # Project only selected fields
+                ]
+
+                # Execute aggregation pipeline
+                cursor = collection.aggregate(pipeline)
+                results = list(cursor)
+
+                if len(results) > 0:
+                    user_data = results[0]  # Get the first (and only) document
+                else:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
@@ -102,16 +166,54 @@ class CRUD:
                         error_message="User not found"
                     )
                     raise ValueError("User not found")
+
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
                     target_id=user_id,
-                    details={"_id": user_id, "retrieved_user": user},
+                    details={"_id": user_id, "retrieved_user": user_data},
                     status="success"
                 )
-                return user
+
+                self.logger.debug(f"ini data user: {user_data}")
+                return user_data
+            
+                # # Selected field
+                # selected_fields={
+                #     "id": "$_id",
+                #     "username":1,
+                #     "email":1,
+                #     "roles":1,
+                #     "status":1,
+                #     "org_id":1,
+                #     "google":1,
+                #     "_id": 0
+                # }
+                # user = collection.find_one({"_id": user_id},selected_fields)
+                # if not user:
+                #     # write audit trail for fail
+                #     self.audit_trail.log_audittrail(
+                #         mongo,
+                #         action="retrieve",
+                #         target=self.collection_name,
+                #         target_id=user_id,
+                #         details={"_id": user_id},
+                #         status="failure",
+                #         error_message="User not found"
+                #     )
+                #     raise ValueError("User not found")
+                # # write audit trail for success
+                # self.audit_trail.log_audittrail(
+                #     mongo,
+                #     action="retrieve",
+                #     target=self.collection_name,
+                #     target_id=user_id,
+                #     details={"_id": user_id, "retrieved_user": user},
+                #     status="success"
+                # )
+                # return user
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
