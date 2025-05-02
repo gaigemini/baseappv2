@@ -24,7 +24,6 @@ router = APIRouter(prefix="/v1/_organization", tags=["Organization"])
 
 @router.post("/init_owner", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User) -> ApiResponse:
 async def create(req: Request) -> ApiResponse:
     request_body = await parse_request_body(req, model.InitRequest)
 
@@ -34,7 +33,6 @@ async def create(req: Request) -> ApiResponse:
 
 @router.post("/init_partner", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
 async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
@@ -60,7 +58,6 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
 
 @router.post("/init_client", response_model=ApiResponse)
 @cbor_or_json
-# async def create(org: model.Organization, user:model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
 async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
@@ -159,6 +156,23 @@ async def update_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_
 
     req = await parse_request_body(req, model.OrganizationUpdate)
     response = _crud.update_by_id(org_id,req)
+    return ApiResponse(status=0, message="Data updated", data=response)
+
+@router.put("/update_status/{org_id}", response_model=ApiResponse)
+@cbor_or_json
+async def update_status_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not (permission_checker.has_permission(cu.roles, "_organization", 4)):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+
+    req = await parse_request_body(req, UpdateStatus)
+    response = _crud.update_status(org_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.delete("/delete/{org_id}", response_model=ApiResponse)
