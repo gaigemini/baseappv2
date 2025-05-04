@@ -201,7 +201,7 @@ class CRUD:
                     # update storage
                     collection_org.find_one_and_update({"_id": self.org_id}, {"$set": {"usedstorage":storage_minio+file_size}}, return_document=True)
 
-                    return {"filename":object_name,"id":insert_metadata.inserted_id}
+                    return {"filename":object_name,"id":insert_metadata.inserted_id,"folder_path":obj["folder_path"]}
                 except S3Error  as s3e:
                     self.logger.error(f"Error uploading file: {str(s3e)}")
                     raise ValueError("Error uploading file.") from s3e
