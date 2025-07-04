@@ -15,7 +15,8 @@
                 "--reload",
                 "--port", "1899"
             ],
-            "jinja": true
+            "jinja": true,
+            "python": "/GAI/baseapp-v2/venv/bin/python"
         }
     ]
 }
