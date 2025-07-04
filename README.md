@@ -13,3 +13,7 @@
 
 to run application:
     uvicorn baseapp.app:app --host 0.0.0.0 --port 1899 --reload
+
+to run on docker:
+1. docker build -t api-baseapp .
+2. docker run -d --name api-baseapp --network dbr0 --ip 172.1.0.12 -p 17177:1899 -v /dvol/build/source/baseapp-v2/baseapp:/app/baseapp api-baseapp:latest
