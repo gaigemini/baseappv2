@@ -64,7 +64,7 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
         httponly=True,
         max_age=timedelta(days=expire_refresh_in),
         secure=config.app_env == "production",  # Gunakan secure hanya di production
-        samesite="None",  # Prevent CSRF
+        samesite="lax",  # Prevent CSRF
         domain=config.domain
     )
 
@@ -146,7 +146,7 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
                 httponly=True,
                 max_age=timedelta(days=expire_refresh_in),
                 secure=config.app_env == "production",  # Gunakan secure hanya di production
-                samesite="None",  # Prevent CSRF
+                samesite="lax",  # Prevent CSRF
                 domain=config.domain
             )
     

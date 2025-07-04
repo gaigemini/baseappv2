@@ -50,6 +50,20 @@ app = FastAPI(
     version="0.0.1",
 )
 
+allowed_origins = [
+    "http://localhost:53464",
+    "https://gai.co.id",
+    "https://baseapp.gai.co.id"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 os.makedirs(config.file_location, exist_ok=True) # create folder data/files
 
 setup_middleware(app)
@@ -71,20 +85,6 @@ app.include_router(feature_router)
 app.include_router(forgot_password_router)
 # app.include_router(gai_ai_router)
 app.include_router(oauth_google_router)
-
-allowed_origins = [
-    "http://localhost:53464",
-    "https://gai.co.id",
-    "https://baseapp.gai.co.id"
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/v1/test")
 def read_root():
