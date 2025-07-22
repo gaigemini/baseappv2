@@ -71,8 +71,7 @@ async def update_status(role_id: str, cu: CurrentUser = Depends(get_current_user
     
     # Buat instance model langsung
     manual_data = UpdateStatus(
-        id=role_id,
-        status=Status.DELETED  # nilai yang Anda tentukan
+        status=Status.DELETE  # nilai yang Anda tentukan
     )
     response = _crud.update_status(role_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)

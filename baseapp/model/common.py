@@ -8,8 +8,9 @@ REDIS_QUEUE_BASE_KEY: str = "reimburse_app"
 class Status(str, Enum):
     """Status of a user and client"""
     ACTIVE = "ACTIVE"
-    SUSPENDED = "SUSPENDED"
-    DELETED = "DELETED"
+    INACTIVE = "INACTIVE"
+    SUSPEND = "SUSPENDED"
+    DELETE = "DELETED"
 
 class CurrentUser(BaseModel):
     """current user"""
@@ -60,7 +61,6 @@ class TokenResponse(BaseModel):
 
 class UpdateStatus(BaseModel):
     """Representation of update status model."""
-    id: str = Field(description="Id of the data.")
     status: Status = Field(description="Status of the data.")
 
 class DMSOperationType(str, Enum):

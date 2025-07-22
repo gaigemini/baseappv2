@@ -97,6 +97,7 @@ class CRUD:
                 # Aggregation pipeline
                 pipeline = [
                     {"$match": query_filter},  # Filter stage
+                    # Lookup stage to join with org data
                     {
                         "$lookup": {
                             "from": "_organization",  # The collection to join with
@@ -127,24 +128,31 @@ class CRUD:
                             }
                         }
                     },
-                    # {
-                    #     "$addFields": {
-                    #         "org_data": {  # Convert the array to a single object
-                    #             "$arrayElemAt": ["$org_data", 0]
-                    #         },
-                    #         "org_data": {
-                    #             "$map": {
-                    #                 "input": "$org_data",  # Changed from "$role_details" to "$roles" to match your selected fields
-                    #                 "as": "org",
-                    #                 "in": {
-                    #                     "id": "$$org._id",
-                    #                     "name": "$$org.org_name",
-                    #                     "initial": "$$org.org_initial"
-                    #                 }
-                    #             }
-                    #         }
-                    #     }
-                    # },
+                    # Lookup stage to join with role groups
+                    {
+                        "$lookup": {
+                            "from": "_role",  # The collection to join with
+                            "localField": "roles",  # Array field in users collection
+                            "foreignField": "_id",  # Field in role_groups collection
+                            "as": "role_details"  # Output array field
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "role_details": {
+                                "$map": {
+                                    "input": "$role_details",
+                                    "as": "role",
+                                    "in": {
+                                        "id": "$$role._id",
+                                        "name": "$$role.name",
+                                        "color": "$$role.color",
+                                        "status": "$$role.status"
+                                    }
+                                }
+                            }
+                        }
+                    },
                     {"$project": selected_fields}  # Project only selected fields
                 ]
 
@@ -179,41 +187,6 @@ class CRUD:
 
                 self.logger.debug(f"ini data user: {user_data}")
                 return user_data
-            
-                # # Selected field
-                # selected_fields={
-                #     "id": "$_id",
-                #     "username":1,
-                #     "email":1,
-                #     "roles":1,
-                #     "status":1,
-                #     "org_id":1,
-                #     "google":1,
-                #     "_id": 0
-                # }
-                # user = collection.find_one({"_id": user_id},selected_fields)
-                # if not user:
-                #     # write audit trail for fail
-                #     self.audit_trail.log_audittrail(
-                #         mongo,
-                #         action="retrieve",
-                #         target=self.collection_name,
-                #         target_id=user_id,
-                #         details={"_id": user_id},
-                #         status="failure",
-                #         error_message="User not found"
-                #     )
-                #     raise ValueError("User not found")
-                # # write audit trail for success
-                # self.audit_trail.log_audittrail(
-                #     mongo,
-                #     action="retrieve",
-                #     target=self.collection_name,
-                #     target_id=user_id,
-                #     details={"_id": user_id, "retrieved_user": user},
-                #     status="success"
-                # )
-                # return user
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
