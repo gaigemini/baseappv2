@@ -17,19 +17,19 @@ jwt_refresh_expired_in = int(config.jwt_refresh_expired_in)
 
 def create_access_token(data: dict, expire_in: int = 1440) -> tuple:
     to_encode = data.copy()
-    _expire_in = jwt_access_expired_in if expire_in else expire_in
+    _expire_in = expire_in if expire_in else jwt_access_expired_in
     expire = datetime.now(timezone.utc) + timedelta(minutes=_expire_in)
     to_encode.update({"exp": expire})
     token = jwt.encode(to_encode, jwt_secret_key, algorithm=jwt_algorithm)
-    return token, jwt_access_expired_in
+    return token, _expire_in
 
 def create_refresh_token(data: dict, expire_in: int = 7) -> tuple:
     to_encode = data.copy()
-    _expire_in = jwt_refresh_expired_in if expire_in else expire_in
+    _expire_in = expire_in if expire_in else jwt_refresh_expired_in
     expire = datetime.now(timezone.utc) + timedelta(days=_expire_in)
     to_encode.update({"exp": expire})
     token = jwt.encode(to_encode, jwt_secret_key, algorithm=jwt_algorithm)
-    return token, jwt_refresh_expired_in
+    return token, _expire_in
 
 def decode_jwt_token(token: str) -> Dict[str, Any]:
     return jwt.decode(token, jwt_secret_key, algorithms=[jwt_algorithm])
