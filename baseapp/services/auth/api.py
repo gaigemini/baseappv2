@@ -50,11 +50,12 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
         )
 
     # Hitung waktu kedaluwarsa akses token
-    # expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
     data = {
         "access_token": access_token,
-        # "token_type": "bearer",
-        # "expired_at": expired_at.isoformat(),
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat(),
     }
 
     if x_client_type == 'mobile':
@@ -136,11 +137,12 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
             redis_conn.delete(f"otp:{username}")
 
             # Hitung waktu kedaluwarsa akses token
-            # expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+            expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+            
             data = {
                 "access_token": access_token,
-                # "token_type": "bearer",
-                # "expired_at": expired_at.isoformat(),
+                "token_type": "bearer",
+                "expired_at": expired_at.isoformat(),
             }
 
             if x_client_type == 'mobile':
@@ -246,11 +248,12 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
 
     # Create new access token
     access_token, expire_access_in = create_access_token(payload)
-    # expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
     data = {
         "access_token": access_token, 
-        # "token_type": "bearer",
-        # "expired_at": expired_at.isoformat()
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat()
     }
     return ApiResponse(status=0, data=data)
     
