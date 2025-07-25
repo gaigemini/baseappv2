@@ -79,7 +79,6 @@ class CRUD:
                     status="success"
                 )
                 del update_user["password"]
-                del update_user["salt"]
                 return update_user
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
@@ -191,7 +190,6 @@ class CRUD:
                     status="success"
                 )
                 del update_user["password"]
-                del update_user["salt"]
                 return update_user
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")

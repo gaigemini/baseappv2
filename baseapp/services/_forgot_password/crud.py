@@ -94,14 +94,13 @@ class CRUD:
                 if not userinfo:
                     raise ValueError("User not found")
                 
-                salt, hashed_password = hash_password(req.new_password)
+                hashed_password = hash_password(req.new_password)
 
                 client = mongodb.MongoConn()
                 with client as mongo:
                     collection = mongo._db["_user"]
                     obj = {}
                     obj["password"] = hashed_password
-                    obj["salt"] = salt
                     obj["mod_by"] = userinfo
                     obj["mod_date"] = datetime.now(timezone.utc)
 

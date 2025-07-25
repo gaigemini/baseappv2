@@ -264,9 +264,8 @@ class CRUD:
         user_data["mod_date"] = datetime.now(timezone.utc)
         user_data["org_id"] = org_data["_id"]
 
-        # Generate salt and hash password
-        salt, hashed_password = hash_password(user_data["password"])
-        user_data["salt"] = salt
+        # Generate hash password
+        hashed_password = hash_password(user_data["password"])
         user_data["password"] = hashed_password
 
         try:

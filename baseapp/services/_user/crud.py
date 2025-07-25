@@ -50,13 +50,11 @@ class CRUD:
             obj["rec_date"] = datetime.now(timezone.utc)
             obj["org_id"] = self.org_id
 
-            # Generate salt and hash password
-            salt, hashed_password = hash_password(data.password)
-            obj["salt"] = salt
+            # Generate hash password
+            hashed_password = hash_password(data.password)
             obj["password"] = hashed_password
             try:
                 result = collection.insert_one(obj)
-                del obj["salt"]
                 del obj["password"]
                 return obj
             except DuplicateKeyError as dke:
@@ -499,11 +497,10 @@ class CRUD:
                 validate_old_password = self._validate_user(mongo,data.old_password)
 
                 password = is_none(data.new_password, generate_password())
-                salt, hashed_password = hash_password(password)
+                hashed_password = hash_password(password)
 
                 obj = {}
                 obj["password"] = hashed_password
-                obj["salt"] = salt
                 obj["mod_by"] = self.user_id
                 obj["mod_date"] = datetime.now(timezone.utc)
 
@@ -556,11 +553,10 @@ class CRUD:
             collection = mongo._db[self.collection_name]
             try:
                 password = is_none(data.new_password, generate_password())
-                salt, hashed_password = hash_password(password)
+                hashed_password = hash_password(password)
 
                 obj = {}
                 obj["password"] = hashed_password
-                obj["salt"] = salt
                 obj["mod_by"] = self.user_id
                 obj["mod_date"] = datetime.now(timezone.utc)
 

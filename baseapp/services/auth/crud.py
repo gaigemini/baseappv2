@@ -55,11 +55,6 @@ class CRUD:
             logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
         
-        usalt = user_info.get("salt")
-        if not usalt:
-            logger.error(f"Salt missing for user {user_info.get('username')}.")
-            raise ValueError("User data is invalid.")
-
         hashed_password = user_info.get("password")
         if not hashed_password:
             logger.error(f"Password missing for user {user_info.get('username')}.")
@@ -97,7 +92,7 @@ class CRUD:
 
         user_data = {
             key: user_info.get(key, None)
-            for key in ["_id", "username", "org_id", "password", "salt", "roles", "status", "bitws", "feature"]
+            for key in ["_id", "username", "org_id", "password", "roles", "status", "bitws", "feature"]
         }
         user_data["authority"] = authority
         if password is None:

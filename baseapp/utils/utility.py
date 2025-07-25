@@ -88,7 +88,7 @@ async def parse_request_body(request: Request, model):
 def hash_password(password: str, salt=None) -> tuple:
     usalt = bcrypt.gensalt() if salt == None else salt
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), usalt)
-    return usalt, hashed_password
+    return hashed_password
 
 def generate_password(length: int = 8):
     characters = string.ascii_letters + string.digits + string.punctuation
