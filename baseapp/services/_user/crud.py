@@ -1,11 +1,10 @@
-import logging,uuid
-from hmac import compare_digest
+import logging,uuid,bcrypt
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
-from baseapp.model.common import Status, REDIS_QUEUE_BASE_KEY, UpdateStatus
+from baseapp.model.common import Status, UpdateStatus
 from baseapp.config import setting, mongodb
 from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, UpdateRoles, UpdateByAdmin, ChangePassword, ResetPassword
 
@@ -185,7 +184,6 @@ class CRUD:
                     status="success"
                 )
 
-                self.logger.debug(f"ini data user: {user_data}")
                 return user_data
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
@@ -474,15 +472,14 @@ class CRUD:
             self.logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
         
-        usalt = user_info.get("salt")
         current_password = user_info.get("password")
         if not current_password:
             self.logger.error(f"Password missing for user {user_info.get('username')}.")
             raise ValueError("User data is invalid.")
+        
+        verify_password = old_password.encode('utf-8')
 
-        salt, verify_password = hash_password(old_password, usalt)
-
-        if not compare_digest(current_password, verify_password):
+        if not bcrypt.checkpw(verify_password, current_password):
             self.logger.warning(f"User {user_info.get('username')} provided invalid password.")
             raise ValueError("Invalid old password.")
         

@@ -1,9 +1,8 @@
-import logging
-from hmac import compare_digest
+import logging, bcrypt
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo
-from baseapp.model.common import Status, REDIS_QUEUE_BASE_KEY
-from baseapp.utils.utility import hash_password, get_enum
+from baseapp.model.common import Status
+from baseapp.utils.utility import get_enum
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -66,9 +65,9 @@ class CRUD:
             logger.error(f"Password missing for user {user_info.get('username')}.")
             raise ValueError("User data is invalid.")
 
-        salt, claim_password = hash_password(password, usalt)
+        claim_password = password.encode('utf-8')
 
-        if not compare_digest(claim_password, hashed_password):
+        if not bcrypt.checkpw(claim_password, hashed_password):
             logger.warning(f"User {user_info.get('username')} provided invalid password.")
             raise ValueError("Invalid password.")
         
