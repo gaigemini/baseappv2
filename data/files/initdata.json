@@ -190,6 +190,16 @@
                     "4": 96
                 },
                 "authority": 7
+            },
+            {
+                "id": "_api_credentials",
+                "feature_name": "_api_credentials",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 248,
+                    "4": 248
+                },
+                "authority": 7
             }
         ]
     },
@@ -328,5 +338,8 @@
         "index":["rec_date","doctype","folder_id","refkey_id","org_id",{
             "refkey_id_table": ["refkey_id", "refkey_table"]
         }]
+    },
+    "_api_credentials":{
+        "index":["rec_date","status","org_id"]
     }
 }

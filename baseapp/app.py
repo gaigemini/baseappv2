@@ -33,6 +33,7 @@ from baseapp.services._feature.api import router as feature_router # feature and
 from baseapp.services._forgot_password.api import router as forgot_password_router # forgot password
 # from baseapp.services.gai_ai.api import router as gai_ai_router # GAI AI
 from baseapp.services.oauth_google.api import router as oauth_google_router # Oauth Google
+from baseapp.services._api_credentials.api import router as api_credential_router # API Credentials
 
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services.redis_worker import RedisWorker
@@ -85,6 +86,7 @@ app.include_router(feature_router)
 app.include_router(forgot_password_router)
 # app.include_router(gai_ai_router)
 app.include_router(oauth_google_router)
+app.include_router(api_credential_router)
 
 @app.get("/v1/test")
 def read_root():

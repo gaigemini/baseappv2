@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
 from baseapp.config import mongodb
-from baseapp.model.common import CurrentUser, Status
+from baseapp.model.common import CurrentUser, Status, CurrentClient
 from baseapp.config.setting import get_settings
 
 config = get_settings()
@@ -91,3 +91,48 @@ def get_current_user_optional(ctx: Request, token: Optional[str] = Depends(OAuth
     if token is None:
         return None
     return _get_current_user(ctx, token)
+
+def get_current_client(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tokenUrl="v1/auth/client-token"))) -> CurrentClient:
+    def credentials_exception(message: str):
+        return HTTPException(
+            status_code=401,
+            detail=message,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    def is_valid_client(client_id: str) -> bool:
+        client = mongodb.MongoConn()
+        with client as mongo:
+            collection = mongo._db["_api_credentials"]
+            query = {"client_id": client_id}
+            client_info = collection.find_one(query)
+            if not client_info:
+                return False
+            if client_info.get("status") != Status.ACTIVE.value:
+                return False
+            return True
+    
+    try:
+        credentials = decode_jwt_token(token)
+    
+    except ExpiredSignatureError as err:
+        error_message = f"get_current_client - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
+        logging.error(error_message)
+        raise credentials_exception(message="Token expired")
+    
+    except JWTError as err:
+        error_message = f"get_current_client - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
+        logging.error(error_message)
+        raise credentials_exception(message="Could not validate credentials")
+    
+    if not is_valid_client(credentials["sub"]):
+        raise credentials_exception("Could not validate credentials")
+
+    return CurrentClient(
+        id=credentials["id"],
+        client_id=credentials["sub"],
+        org_id=credentials["org_id"],
+        log_id=ctx.state.log_id,
+        ip_address=ctx.client.host,
+        user_agent=ctx.headers.get("user-agent")
+    )
