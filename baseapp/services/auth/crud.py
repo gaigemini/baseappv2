@@ -1,6 +1,6 @@
 import logging, bcrypt
 from baseapp.config import setting, mongodb
-from baseapp.services.auth.model import UserInfo
+from baseapp.services.auth.model import UserInfo, ClientInfo
 from baseapp.model.common import Status
 from baseapp.utils.utility import get_enum
 
@@ -12,6 +12,7 @@ class CRUD:
         self.user_collection = "_user"
         self.org_collection = "_organization"
         self.permissions_collection = "_featureonrole"
+        self.api_credentials = "_api_credentials"
 
         self.mongo = mongodb.MongoConn()  # Inisialisasi MongoDB di sini
 
@@ -54,7 +55,7 @@ class CRUD:
         if user_info.get("status") != Status.ACTIVE.value:
             logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
-        
+
         hashed_password = user_info.get("password")
         if not hashed_password:
             logger.error(f"Password missing for user {user_info.get('username')}.")
@@ -106,3 +107,37 @@ class CRUD:
             )
         else:
             return self.validate_password(user_data, password)
+        
+    def find_client_id(self, client_id: str) -> dict:
+        collection = self.mongo._db[self.api_credentials]
+        query = {"client_id": client_id}
+        client_info = collection.find_one(query)
+        if not client_info:
+            logger.warning(f"Client with ID '{client_id}' not found.")
+            raise ValueError("Client not found")
+        return client_info
+    
+    def validate_client(self, client_id, client_secret) -> ClientInfo:
+        client_info = self.find_client_id(client_id)
+
+        client_data = {
+            key: client_info.get(key, None)
+            for key in ["_id", "org_id", "client_id", "client_secret_hash"]
+        }
+
+        if client_info.get("status") != Status.ACTIVE.value:
+            logger.warning(f"Client {client_id} is not active.")
+            raise ValueError("Client is not active.")
+
+        client_secret_hash = client_info.get("client_secret_hash")
+        claim_client_secret = client_secret.encode('utf-8')
+
+        if not bcrypt.checkpw(claim_client_secret, client_secret_hash):
+            logger.warning(f"Client {client_id} provided invalid secret.")
+            raise ValueError("Invalid client secret.")
+        
+        return ClientInfo(
+            id=client_data["_id"], 
+            org_id=client_data["org_id"], 
+            client_id=client_data["client_id"]
+        )

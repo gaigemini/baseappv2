@@ -9,7 +9,7 @@ from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user
-from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
+from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest, ClientAuthCredential
 from baseapp.services.auth.crud import CRUD
 
 config = get_settings()
@@ -41,6 +41,9 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
     access_token, expire_access_in = create_access_token(token_data)
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
+    # Hitung waktu kedaluwarsa akses token
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
     # Simpan refresh token ke Redis
     with RedisConn() as redis_conn:
         redis_conn.set(
@@ -49,13 +52,10 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
             ex=timedelta(days=expire_refresh_in),
         )
 
-    # Hitung waktu kedaluwarsa akses token
-    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
-
     data = {
         "access_token": access_token,
         "token_type": "bearer",
-        "expired_at": expired_at.isoformat(),
+        "expired_at": expired_at.isoformat()
     }
 
     if x_client_type == 'mobile':
@@ -138,7 +138,6 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
 
             # Hitung waktu kedaluwarsa akses token
             expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
-            
             data = {
                 "access_token": access_token,
                 "token_type": "bearer",
@@ -249,7 +248,6 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     # Create new access token
     access_token, expire_access_in = create_access_token(payload)
     expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
-
     data = {
         "access_token": access_token, 
         "token_type": "bearer",
@@ -283,3 +281,34 @@ async def auth_status(request: Request, cu: CurrentUser = Depends(get_current_us
     cu_data = cu.model_dump(exclude={"log_id", "ip_address", "user_agent", "token"})
     # Return response berhasil
     return ApiResponse(status=0, data=cu_data)
+
+@router.post("/client-token", response_model=ApiResponse)
+async def login(req: ClientAuthCredential) -> ApiResponse:
+    client_id = req.client_id
+    client_secret = req.client_secret
+
+    # Validasi client
+    with _crud:
+        client_info = _crud.validate_client(client_id, client_secret)
+
+    # Data token
+    token_data = {
+        "sub": client_id,
+        "id": client_info.id,
+        "org_id": client_info.org_id
+    }
+
+    # Buat akses token dan refresh token
+    access_token, expire_access_in = create_access_token(token_data,60)
+
+    # Hitung waktu kedaluwarsa akses token
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
+    data = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat()
+    }
+
+    # Return response berhasil
+    return ApiResponse(status=0, data=data)
