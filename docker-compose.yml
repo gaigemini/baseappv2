@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Run the API service
+  api:
+    build: .
+    command: api
+    ports:
+      - "1899:1899"
+    env_file:
+      - .env
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+
+  # Run the worker service for processing tasks using RabbitMQ
+  webhook_worker:
+    build: .
+    command: worker --queue webhook_tasks
+    restart: always
+    env_file:
+      - .env
+    deploy:
+      replicas: 2
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+
+# Definisikan network di level atas
+networks:
+  my-shared-network:
+    # Beri tahu Docker Compose bahwa network ini sudah ada
+    external: true
+    # Ganti 'nama-network-anda' dengan nama network yang sebenarnya
+    name: gnusa

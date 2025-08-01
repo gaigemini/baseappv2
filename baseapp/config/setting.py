@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     # rabbit mq
     rabbitmq_host: str
     rabbitmq_port: int
+    rabbitmq_user: str
+    rabbitmq_pass: str
 
     # Minio
     minio_host: str
