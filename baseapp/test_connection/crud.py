@@ -1,6 +1,6 @@
 import logging
-import traceback
-from baseapp.config import setting, redis, mongodb, minio, rabbitmq, clickhouse
+from baseapp.config import setting, redis, mongodb, minio, clickhouse
+from baseapp.services import publisher
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -39,15 +39,19 @@ def test_connection_to_minio():
             raise
     
 def test_connection_to_rabbit():
+    logger.info("RabbitMQ test connection")
     try:
-        logger.info("RabbitMQ test connection")
-        client = rabbitmq.RabbitMqConn()
-        with client as rabbit_conn:
-            rabbit_conn.queue_declare(queue='test_queue', durable=False, auto_delete=True)
-            logger.info("RabbitMQ: Connection successful. Queue 'test_queue' declared.")
-            return "RabbitMQ: Connection successful. Queue 'test_queue' declared."
+        objData = {
+            "_execfile": "baseapp.services._consumer._test",  # Nama modul yang akan dieksekusi oleh worker
+            "data": {
+                "name": "rabbitmq",
+                "message": "Hello RabbitMQ!"
+            }
+        }
+        publisher.publish_message(queue_name="webhook_tasks", task_data=objData)
+        return "RabbitMQ: Connection successful. Queue 'webhook_tasks' declared."
     except Exception as e:
-        logger.error(f"RabbitMQ operation failed: {e}")
+        logger.error(f"Failed to publish message to RabbitMQ: {e}")
         raise
     
 def test_connection_to_clickhouse():

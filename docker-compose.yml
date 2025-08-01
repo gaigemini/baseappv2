@@ -7,8 +7,6 @@ services:
     command: api
     ports:
       - "1899:1899"
-    env_file:
-      - .env
     networks: # <-- Tambahkan ini
       - my-shared-network
 
@@ -17,10 +15,8 @@ services:
     build: .
     command: worker --queue webhook_tasks
     restart: always
-    env_file:
-      - .env
-    deploy:
-      replicas: 2
+    # deploy:
+    #   replicas: 2
     networks: # <-- Tambahkan ini
       - my-shared-network
 

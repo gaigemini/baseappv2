@@ -1,8 +1,11 @@
-import pika, argparse, json, logging
+import argparse, json
 from importlib import import_module
 from baseapp.config.rabbitmq import RabbitMqConn
 
-logger = logging.getLogger("rabbit")
+import logging.config
+logging.config.fileConfig('logging.conf')
+from logging import getLogger
+logger = getLogger("rabbit")
 
 def start_consuming(queue_name: str):
     """
