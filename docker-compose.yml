@@ -10,13 +10,21 @@ services:
     networks: # <-- Tambahkan ini
       - my-shared-network
 
-  # Run the worker service for processing tasks using RabbitMQ
+  # Run the worker service for processing other tasks using RabbitMQ
   webhook_worker:
     build: .
     command: worker --queue webhook_tasks
     restart: always
     # deploy:
     #   replicas: 2
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+
+  # Run the worker service for processing OTP tasks using Redis
+  otp_worker:
+    build: .
+    command: redis_worker --queue otp_tasks
+    restart: always
     networks: # <-- Tambahkan ini
       - my-shared-network
 

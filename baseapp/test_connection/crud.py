@@ -1,6 +1,7 @@
 import logging
 from baseapp.config import setting, redis, mongodb, minio, clickhouse
 from baseapp.services import publisher
+from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
 logger = logging.getLogger()
@@ -65,3 +66,13 @@ def test_connection_to_clickhouse():
         else:
             logging.error("ClickHouse: Connection test failed")
             raise ValueError("ClickHouse: Connection test failed")
+        
+def test_redis_worker():
+    logger.info("Redis worker test connection")
+    try:
+        queue_manager = RedisQueueManager(queue_name="otp_tasks")
+        queue_manager.enqueue_task({"func":"otp","email": "aldian.mm.02@gmail.com", "otp": "123456", "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: 123456"})
+        return "Redis worker: Task enqueued successfully."
+    except Exception as e:
+        logger.error(f"Failed to publish message to Redis: {e}")
+        raise

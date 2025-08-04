@@ -17,6 +17,13 @@ case "$1" in
         # Jalankan consumer sebagai modul dengan sisa argumennya
         exec python -m baseapp.services.consumer "$@"
         ;;
+    redis_worker)
+        echo "Starting Redis worker..."
+        # Hapus argumen pertama ('worker') dan jalankan sisanya
+        shift
+        # Jalankan consumer sebagai modul dengan sisa argumennya
+        exec python -m baseapp.services.redis_manager "$@"
+        ;;
     *)
         # Jalankan perintah apa pun yang diberikan
         exec "$@"

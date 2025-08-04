@@ -39,6 +39,11 @@ async def test_connection_to_clickhouse() -> ApiResponse:
     resp = test.test_connection_to_clickhouse()
     return ApiResponse(status=0, message=resp)
 
+@router.get("/redis-worker")
+async def test_redis_worker() -> ApiResponse:
+    resp = test.test_redis_worker()
+    return ApiResponse(status=0, message=resp)
+
 @router.api_route("/forward/cbor/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], response_model=ApiResponse)
 async def test_api_cbor(ctx: Request, path: str) -> ApiResponse:
     # Extract incoming request details
