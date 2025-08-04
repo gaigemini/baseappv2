@@ -5,8 +5,8 @@ import logging
 logger = logging.getLogger()
 
 from baseapp.services.redis_queue import RedisQueueManager
-from baseapp.services.mail_manager import MailManager
-from baseapp.services.minio_manager import MinioManager
+from baseapp.services._consumer._mail import MailManager
+from baseapp.services._consumer._minio import MinioManager
 
 class RedisWorker:
     def __init__(self,redis_queue_manager: RedisQueueManager):
