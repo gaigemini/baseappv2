@@ -6,7 +6,6 @@ config = setting.get_settings()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# from baseapp.model.common import REDIS_QUEUE_BASE_KEY
 from baseapp.services.middleware import setup_middleware
 
 os.makedirs("log", exist_ok=True) # create log folder
@@ -33,16 +32,6 @@ from baseapp.services._feature.api import router as feature_router # feature and
 from baseapp.services._forgot_password.api import router as forgot_password_router # forgot password
 from baseapp.services.oauth_google.api import router as oauth_google_router # Oauth Google
 from baseapp.services._api_credentials.api import router as api_credential_router # API Credentials
-
-# from baseapp.services.redis_queue import RedisQueueManager
-# from baseapp.services.redis_worker import RedisWorker
-
-# Redis connection and queue configuration
-# queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)
-
-# Worker setup
-# worker = RedisWorker(queue_manager)
-# worker.start()
 
 app = FastAPI(
     title="baseapp",
@@ -89,10 +78,3 @@ app.include_router(api_credential_router)
 @app.get("/v1/test")
 def read_root():
     return "ok"
-
-# @app.on_event("shutdown")
-# def shutdown_worker():
-#     """
-#     Gracefully stop the worker on server shutdown.
-#     """
-#     worker.stop()
