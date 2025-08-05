@@ -31,6 +31,7 @@ class CurrentClient(BaseModel):
     id: str
     client_id: str = Field(description="Client ID")
     org_id: str
+    token: str
     log_id: Optional[str] = None
     ip_address: Optional[str] = None
     user_agent : Optional[str] = None

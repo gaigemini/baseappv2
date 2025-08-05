@@ -256,19 +256,21 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     return ApiResponse(status=0, data=data)
     
 @router.post("/logout", response_model=ApiResponse)
-async def logout(request: Request, response: Response) -> ApiResponse:
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise ValueError("Refresh token missing")
-    
-    # Decode refresh token
-    payload = decode_jwt_token(refresh_token)
-    if not payload:
-        raise ValueError("Invalid refresh token")
+async def logout(response: Response, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    # Revoke access token
+    access_token = cu.token 
+    payload_access_token = decode_jwt_token(access_token)
+    jti = payload_access_token.get("jti")
+    exp = payload_access_token.get("exp")
 
     # Check token in Redis
     with RedisConn() as redis_conn:
-        redis_conn.delete(payload["sub"])
+        redis_conn.delete(payload_access_token["sub"])
+        if jti and exp:
+            sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()
+            if sisa_waktu_detik > 0:
+                # Simpan jti ke Redis dengan TTL
+                redis_conn.setex(f"deny_list:{jti}", int(sisa_waktu_detik), "revoked")
 
     # Hapus cookie di klien
     response.delete_cookie("refresh_token")

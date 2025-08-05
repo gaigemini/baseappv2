@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Query, Depends, Request
+from fastapi import APIRouter, Query, Depends, Request, Response
 from typing import Optional, List
+from datetime import datetime, timezone
 
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
-from baseapp.utils.jwt import get_current_user
+from baseapp.utils.jwt import get_current_user, decode_jwt_token
 from baseapp.utils.utility import cbor_or_json, parse_request_body
-
+from baseapp.config.redis import RedisConn
 from baseapp.config import setting
 config = setting.get_settings()
 
@@ -74,7 +75,7 @@ async def update_status(user_id: str, cu: CurrentUser = Depends(get_current_user
 
 @router.put("/change_password", response_model=ApiResponse)
 @cbor_or_json
-async def update_change_password(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_change_password(req: Request, response: Response, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_user", 4) or permission_checker.has_permission(cu.roles, "_myprofile", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -86,8 +87,27 @@ async def update_change_password(req: Request, cu: CurrentUser = Depends(get_cur
     )
 
     req = await parse_request_body(req, model.ChangePassword)
-    response = _crud.change_password(req)
-    return ApiResponse(status=0, message="Password has change", data=response)
+    result = _crud.change_password(req)
+
+    # Revoke access token
+    access_token = cu.token 
+    payload_access_token = decode_jwt_token(access_token)
+    jti = payload_access_token.get("jti")
+    exp = payload_access_token.get("exp")
+
+    # Check token in Redis
+    with RedisConn() as redis_conn:
+        redis_conn.delete(payload_access_token["sub"])
+        if jti and exp:
+            sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()
+            if sisa_waktu_detik > 0:
+                # Simpan jti ke Redis dengan TTL
+                redis_conn.setex(f"deny_list:{jti}", int(sisa_waktu_detik), "revoked")
+
+    # Hapus cookie di klien
+    response.delete_cookie("refresh_token")
+
+    return ApiResponse(status=0, message="Password has change", data=result)
 
 @router.put("/reset_password/{user_id}", response_model=ApiResponse)
 @cbor_or_json
