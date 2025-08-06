@@ -3,12 +3,13 @@ from fastapi import APIRouter, Request, Response, Form, Depends, Header
 from datetime import datetime, timezone, timedelta
 import logging
 import random
+import uuid
 
 from baseapp.model.common import ApiResponse, TokenResponse, CurrentUser
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
-from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user
+from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user, revoke_all_refresh_tokens
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest, ClientAuthCredential
 from baseapp.services.auth.crud import CRUD
 
@@ -45,9 +46,11 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
     expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
 
     # Simpan refresh token ke Redis
+    session_id = uuid.uuid4().hex
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
-            username,
+            redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
@@ -127,8 +130,10 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
             refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
             # Simpan refresh token ke Redis
+            session_id = uuid.uuid4().hex
+            redis_key = f"refresh_token:{user_info.id}:{session_id}"
             redis_conn.set(
-                username,
+                redis_key,
                 refresh_token,
                 ex=timedelta(days=expire_refresh_in),
             )
@@ -193,9 +198,11 @@ async def token(
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
     # Simpan refresh token ke Redis
+    session_id = uuid.uuid4().hex
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
-            username,
+            redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
@@ -265,7 +272,7 @@ async def logout(response: Response, cu: CurrentUser = Depends(get_current_user)
 
     # Check token in Redis
     with RedisConn() as redis_conn:
-        redis_conn.delete(payload_access_token["sub"])
+        revoke_all_refresh_tokens(cu.id, redis_conn)
         if jti and exp:
             sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()
             if sisa_waktu_detik > 0:

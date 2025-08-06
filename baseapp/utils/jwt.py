@@ -96,3 +96,30 @@ def get_current_user_optional(ctx: Request, token: Optional[str] = Depends(OAuth
     if token is None:
         return None
     return _get_current_user(ctx, token)
+
+def _perform_revoke_token(redis_conn, user_id: str):
+    """Mencari dan menghapus semua refresh token milik satu user."""
+    keys_to_delete = []
+    cursor = 0
+    pattern = f"refresh_token:{user_id}:*"
+    
+    while True:
+        cursor, keys = redis_conn.scan(cursor=cursor, match=pattern, count=100)
+        if keys:
+            keys_to_delete.extend(keys)
+        
+        if cursor == 0:
+            break
+    
+    if keys_to_delete:
+        redis_conn.delete(*keys_to_delete)
+        logging.info(f"{len(keys_to_delete)} refresh token(s) for user {user_id} have been revoked.")
+
+def revoke_all_refresh_tokens(user_id: str, conn=None):
+    """Mencabut semua refresh token untuk user tertentu."""
+    if conn:
+        _perform_revoke_token(conn, user_id)
+    else:
+        with RedisConn() as redis_conn:
+            _perform_revoke_token(redis_conn, user_id)
+    logging.info(f"All refresh tokens for user {user_id} have been revoked.")

@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
-from baseapp.utils.jwt import get_current_user, decode_jwt_token
+from baseapp.utils.jwt import get_current_user, decode_jwt_token, revoke_all_refresh_tokens
 from baseapp.utils.utility import cbor_or_json, parse_request_body
 from baseapp.config.redis import RedisConn
 from baseapp.config import setting
@@ -97,7 +97,7 @@ async def update_change_password(req: Request, response: Response, cu: CurrentUs
 
     # Check token in Redis
     with RedisConn() as redis_conn:
-        redis_conn.delete(payload_access_token["sub"])
+        revoke_all_refresh_tokens(cu.id, redis_conn)
         if jti and exp:
             sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()
             if sisa_waktu_detik > 0:
@@ -124,6 +124,7 @@ async def update_reset_passowrd(user_id: str, req: Request, cu: CurrentUser = De
     
     req = await parse_request_body(req, model.ResetPassword)
     response = _crud.reset_password(user_id,req)
+    revoke_all_refresh_tokens(user_id)
     return ApiResponse(status=0, message="Password has change", data=response)
 
 @router.get("", response_model=ApiResponse)

@@ -7,6 +7,7 @@ from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services._forgot_password.model import OTPRequest, VerifyOTPRequest, ResetPasswordRequest
 from baseapp.utils.utility import hash_password
+from baseapp.utils.jwt import revoke_all_refresh_tokens
 
 config = setting.get_settings()
 
@@ -97,6 +98,9 @@ class CRUD:
                         raise ValueError("Reset password failed")
                     
                     with self.redis_conn as conn:
+                        # Revoke all refresh tokens for the user
+                        revoke_all_refresh_tokens(userinfo, conn)
+                        # Hapus token reset setelah berhasil
                         conn.delete(f"reset_token:{req.email}")
 
                     return {"status": "success", "message": "Password has been reset"}
