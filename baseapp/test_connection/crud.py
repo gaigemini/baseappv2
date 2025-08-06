@@ -43,11 +43,8 @@ def test_connection_to_rabbit():
     logger.info("RabbitMQ test connection")
     try:
         objData = {
-            "_execfile": "baseapp.services._consumer._test",  # Nama modul yang akan dieksekusi oleh worker
-            "data": {
-                "name": "rabbitmq",
-                "message": "Hello RabbitMQ!"
-            }
+            "name": "rabbitmq",
+            "message": "Hello RabbitMQ!"
         }
         publisher.publish_message(queue_name="webhook_tasks", task_data=objData)
         return "RabbitMQ: Connection successful. Queue 'webhook_tasks' declared."
@@ -71,7 +68,7 @@ def test_redis_worker():
     logger.info("Redis worker test connection")
     try:
         queue_manager = RedisQueueManager(queue_name="otp_tasks")
-        queue_manager.enqueue_task({"func":"otp","email": "aldian.mm.02@gmail.com", "otp": "123456", "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: 123456"})
+        queue_manager.enqueue_task({"email": "aldian.mm.02@gmail.com", "otp": "123456", "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: 123456"})
         return "Redis worker: Task enqueued successfully."
     except Exception as e:
         logger.error(f"Failed to publish message to Redis: {e}")

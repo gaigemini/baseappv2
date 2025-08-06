@@ -15,7 +15,7 @@ jwt_algorithm = config.jwt_algorithm
 jwt_access_expired_in = int(config.jwt_access_expired_in)
 jwt_refresh_expired_in = int(config.jwt_refresh_expired_in)
 
-def create_access_token(data: dict, expire_in: int = 1440) -> tuple:
+def create_access_token(data: dict, expire_in: int = 60) -> tuple:
     to_encode = data.copy()
     _expire_in = expire_in if expire_in else jwt_access_expired_in
     expire = datetime.now(timezone.utc) + timedelta(minutes=_expire_in)
@@ -62,7 +62,7 @@ def _get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(to
         with RedisConn() as redis_conn:
             if redis_conn.exists(f"deny_list:{jti}"):
                 # Jika ada, berarti token sudah dicabut. Tolak akses.
-                raise credentials_exception("Token has been revoked")
+                raise credentials_exception(message="Token has been revoked")
 
     if "authority" in credentials:
         return CurrentUser(

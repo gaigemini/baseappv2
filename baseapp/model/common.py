@@ -1,9 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Literal, List
+from typing import Optional, Any, List
 from enum import Enum
-from datetime import datetime, timezone
-
-REDIS_QUEUE_BASE_KEY: str = "otp_tasks"
 
 class Status(str, Enum):
     """Status of a user and client"""

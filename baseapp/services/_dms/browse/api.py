@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query, Depends, Request
+from fastapi import APIRouter, Query, Depends
 
 from baseapp.model.common import ApiResponse, CurrentUser, DMSOperationType
 from baseapp.utils.jwt import get_current_user
-from baseapp.utils.utility import cbor_or_json, parse_request_body
+from baseapp.utils.utility import cbor_or_json
 
 from baseapp.config import setting
 config = setting.get_settings()

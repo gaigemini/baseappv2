@@ -91,21 +91,6 @@ class CRUD:
                         details={"aggregate": pipeline},
                         status="success"
                     )
-                    
-                    # retData = {}
-                    # for x in results:
-                    #     retData[x['refkey_name']] = {
-                    #         'id':x['id'],
-                    #         'folder_id':x['folder_id'],
-                    #         'folder_path':x['folder_path'],
-                    #         'filename':x['filename'],
-                    #         'filestat':x['filestat'],
-                    #         'metadata':x['metadata'],
-                    #     }
-                    #     # presigned url
-                    #     minio_client = conn.get_minio_client()
-                    #     url = minio_client.presigned_get_object(config.minio_bucket, x['filename'])
-                    #     retData[x['refkey_name']]['url'] = url
 
                     for i, data in enumerate(results):
                         # presigned url

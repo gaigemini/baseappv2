@@ -1,13 +1,20 @@
 import argparse, json
-from importlib import import_module
 from baseapp.config.rabbitmq import RabbitMqConn
+
+# Importing the worker class
+from baseapp.services._rabbitmq_worker._webhook_worker import WebhookWorker
 
 import logging.config
 logging.config.fileConfig('logging.conf')
 from logging import getLogger
 logger = getLogger("rabbit")
 
-def start_consuming(queue_name: str):
+WORKER_MAP = {
+    "webhook_tasks": WebhookWorker,
+    # Tambahkan worker lain di sini
+}
+
+def start_consuming(queue_name: str, worker_instance):
     """
     Memulai worker untuk mendengarkan pesan dari antrian secara terus-menerus.
     """
@@ -22,18 +29,13 @@ def start_consuming(queue_name: str):
 
             # Definisikan fungsi callback di dalam scope ini agar bisa mengakses 'channel'
             def callback(ch, method, properties, body):
-                logger.info("Menerima tugas baru dari antrian.")
                 try:
-                    # Proses pesan
-                    messageObj = json.loads(body)
-                    if "_execfile" in messageObj:
-                        _execModule = import_module(messageObj["_execfile"])
-                        _execFunction = getattr(_execModule, "_runcommand")
-                        _execFunction(messageObj['data'])
-                    
-                    # Kirim konfirmasi HANYA SETELAH tugas selesai diproses
+                    task_data = json.loads(body)
+                    logger.info(f"New task received for worker {worker_instance.__class__.__name__}")
+                    # Delegasikan tugas ke method process() dari worker yang sesuai
+                    worker_instance.process(task_data)
                     ch.basic_ack(delivery_tag=method.delivery_tag)
-                    logger.info("Tugas berhasil diselesaikan.")
+                    logger.info("Task successfully processed and acknowledged.")
 
                 except Exception as e:
                     logger.error(f"Terjadi error saat memproses tugas: {e}")
@@ -48,13 +50,13 @@ def start_consuming(queue_name: str):
                 auto_ack=False # Sangat penting untuk keandalan
             )
 
-            logger.info(f"[*] Worker siap menerima pesan dari antrian '{queue_name}'. Tekan CTRL+C untuk keluar.")
+            logger.info(f"[*] Worker '{worker_instance.__class__.__name__}' ready for queue '{queue_name}'. To exit press CTRL+C")
             channel.start_consuming()
 
     except KeyboardInterrupt:
-        logger.info("Worker dihentikan.")
+        logger.info("Worker stopped by user.")
     except Exception as e:
-        logger.error(f"Koneksi ke RabbitMQ terputus atau gagal: {e}")
+        logger.error(f"RabbitMQ connection failed: {e}")
 
 
 if __name__ == "__main__":
@@ -63,10 +65,19 @@ if __name__ == "__main__":
     parser.add_argument(
         '--queue', 
         type=str, 
-        required=True, 
+        required=True,
+        choices=WORKER_MAP.keys(),
         help="Nama antrian yang akan di-consume."
     )
     args = parser.parse_args()
+    queue_name = args.queue
 
-    # Jalankan worker untuk mendengarkan antrian 'webhook_tasks'
-    start_consuming(queue_name=args.queue)
+    WorkerClass = WORKER_MAP.get(queue_name)
+    if not WorkerClass:
+        logger.error(f"No worker configured for queue: '{queue_name}'")
+        exit(1)
+
+    worker_instance = WorkerClass()
+
+    # Jalankan consumer dengan instance worker tersebut
+    start_consuming(queue_name=args.queue, worker_instance=worker_instance)

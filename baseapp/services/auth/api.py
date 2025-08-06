@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 import logging
 import random
 
-from baseapp.model.common import ApiResponse, REDIS_QUEUE_BASE_KEY, TokenResponse, CurrentUser
+from baseapp.model.common import ApiResponse, TokenResponse, CurrentUser
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
@@ -92,8 +92,8 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     with RedisConn() as redis_conn:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
-    queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)
-    queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
+    queue_manager = RedisQueueManager(queue_name="otp_tasks")  # Pass actual RedisConn here
+    queue_manager.enqueue_task({"email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
 
     # Return response berhasil
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})

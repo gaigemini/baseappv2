@@ -47,13 +47,10 @@ if __name__ == "__main__":
     
     # Data yang akan dikirim
     objData = {
-        "_execfile": "modules.webhook_processor", # Nama modul yang akan dieksekusi oleh worker
-        "data": {
-            "event_type": "payment.succeeded",
-            "event_data": {"payment_id": "pay_12345", "amount": 50000},
-            "org_id": "org_abcde"
-        }
+        "event_type": "payment.succeeded",
+        "event_data": {"payment_id": "pay_12345", "amount": 50000},
+        "org_id": "org_abcde"
     }
 
-    # Panggil fungsi untuk mengirim pesan
+    # Mengirim pesan ke antrian 'webhook_tasks'
     publish_message(queue_name="webhook_tasks", task_data=objData)
