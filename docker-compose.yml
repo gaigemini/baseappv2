@@ -13,7 +13,7 @@ services:
   # Run the worker service for processing other tasks using RabbitMQ
   webhook_worker:
     build: .
-    command: worker --queue webhook_tasks
+    command: rabbit_worker --queue webhook_tasks
     restart: always
     # deploy:
     #   replicas: 2

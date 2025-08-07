@@ -10,7 +10,7 @@ case "$1" in
         # Ganti main:app dengan nama file dan instance FastAPI Anda
         exec python main.py
         ;;
-    worker)
+    rabbit_worker)
         echo "Starting RabbitMQ worker..."
         # Hapus argumen pertama ('worker') dan jalankan sisanya
         shift
