@@ -100,7 +100,7 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
-    def get_by_id(self, payment_method_id: str):
+    def get_by_id(self, api_cred_id: str):
         """
         Retrieve a api credential by ID.
         """
@@ -108,15 +108,15 @@ class CRUD:
         with client as mongo:
             collection = mongo._db[self.collection_name]
             try:
-                payment_method = collection.find_one({"_id": payment_method_id})
-                if not payment_method:
+                credential = collection.find_one({"_id": api_cred_id})
+                if not credential:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="retrieve",
                         target=self.collection_name,
-                        target_id=payment_method_id,
-                        details={"_id": payment_method_id},
+                        target_id=api_cred_id,
+                        details={"_id": api_cred_id},
                         status="failure",
                         error_message="API Credential not found"
                     )
@@ -126,11 +126,11 @@ class CRUD:
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=payment_method_id,
-                    details={"_id": payment_method_id, "retrieved_data": payment_method},
+                    target_id=api_cred_id,
+                    details={"_id": api_cred_id, "retrieved_data": credential},
                     status="success"
                 )
-                return payment_method
+                return credential
             except PyMongoError as pme:
                 self.logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -138,8 +138,8 @@ class CRUD:
                     mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=payment_method_id,
-                    details={"_id": payment_method_id},
+                    target_id=api_cred_id,
+                    details={"_id": api_cred_id},
                     status="failure",
                     error_message=str(pme)
                 )
@@ -148,7 +148,7 @@ class CRUD:
                 self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
-    def update_by_id(self, payment_method_id: str, data):
+    def update_by_id(self, api_cred_id: str, data):
         """
         Update a api credential's data by ID.
         """
@@ -159,14 +159,14 @@ class CRUD:
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
             try:
-                update_api_credential = collection.find_one_and_update({"_id": payment_method_id}, {"$set": obj}, return_document=True)
+                update_api_credential = collection.find_one_and_update({"_id": api_cred_id}, {"$set": obj}, return_document=True)
                 if not update_api_credential:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
                         action="update",
                         target=self.collection_name,
-                        target_id=payment_method_id,
+                        target_id=api_cred_id,
                         details={"$set": obj},
                         status="failure",
                         error_message="API Credential not found"
@@ -177,7 +177,7 @@ class CRUD:
                     mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=payment_method_id,
+                    target_id=api_cred_id,
                     details={"$set": obj},
                     status="success"
                 )
@@ -194,7 +194,7 @@ class CRUD:
                     mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=payment_method_id,
+                    target_id=api_cred_id,
                     details={"$set": obj},
                     status="failure",
                     error_message=str(pme)

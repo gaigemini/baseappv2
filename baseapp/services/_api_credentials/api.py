@@ -94,7 +94,7 @@ async def get_all_data(
         status: str = Query(None, description="Status data")
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "payment_method", 1):  # 1 untuk izin baca
+    if not permission_checker.has_permission(cu.roles, "_api_credentials", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
 
     _crud.set_context(
