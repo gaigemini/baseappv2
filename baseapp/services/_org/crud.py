@@ -232,6 +232,9 @@ class CRUD:
                     "f_id": feature["_id"],
                     "permission": totalBitRA-feature["negasiperm"][str(org_data['authority'])]
                 })
+            if len(initial_data) == 0:
+                self.logger.warning("No features found matching the authority criteria.")
+                raise ValueError("No features found matching the authority criteria.")
             collection.insert_many(initial_data, ordered=False)
             self.logger.info(f"Inserted {len(initial_data)} documents into _featureonrole")
             
