@@ -1,19 +1,20 @@
-import logging,uuid,io,re
+import logging,io,re
 
 from pymongo.errors import PyMongoError
-from typing import Optional, Dict, Any
-from pymongo import ASCENDING, DESCENDING
+from typing import Optional
 from datetime import datetime, timezone
 from minio.error import S3Error
 from magic import from_buffer
 from pathlib import Path
 from fastapi import UploadFile
 
+from baseapp.utils.utility import generate_uuid
 from baseapp.config import setting, mongodb, minio
 from baseapp.services._dms.upload.model import UploadFile, SetMetaData
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
@@ -22,7 +23,6 @@ class CRUD:
         self.collection_doctype = "_dmsdoctype"
         self.collection_organization = "_organization"
         self.minio_conn = minio.MinioConn()
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -53,7 +53,7 @@ class CRUD:
         """
         mime_type = from_buffer(file_content, mime=True)
         if mime_type not in allowed_mime_types:
-            self.logger.warning("Invalid file type")
+            logger.warning("Invalid file type")
             raise ValueError("Invalid file type")
     
     def get_storage_org(self, collection) -> int:
@@ -114,7 +114,7 @@ class CRUD:
             if len(getFolder) == 0:
                 # Insert folder if it does not exist
                 insertFolder = {
-                    "_id":str(uuid.uuid4()),
+                    "_id":generate_uuid(),
                     "folder_name": folderName,
                     "level": levelFolder,
                     "org_id": self.org_id,
@@ -124,7 +124,7 @@ class CRUD:
                 inserted_folder = collection_folder.insert_one(insertFolder)
                 pidFolder = inserted_folder.inserted_id
             else:
-                self.logger.debug(f"data folder: {getFolder}")
+                logger.debug(f"data folder: {getFolder}")
                 pidFolder = getFolder[0]['_id']
 
         return pidFolder,folderString
@@ -145,7 +145,7 @@ class CRUD:
         if file_extension not in [".pdf", ".jpg", ".png", ".txt"]:
             raise ValueError("Unsupported file extension")
         
-        UUID = str(uuid.uuid4())
+        UUID = generate_uuid()
         payload = payload.model_dump()
 
         client = mongodb.MongoConn()
@@ -203,13 +203,13 @@ class CRUD:
 
                     return {"filename":object_name,"id":insert_metadata.inserted_id,"folder_path":obj["folder_path"]}
                 except S3Error  as s3e:
-                    self.logger.error(f"Error uploading file: {str(s3e)}")
+                    logger.error(f"Error uploading file: {str(s3e)}")
                     raise ValueError("Error uploading file.") from s3e
                 except PyMongoError as pme:
-                    self.logger.error(f"Database error occurred: {str(pme)}")
+                    logger.error(f"Database error occurred: {str(pme)}")
                     raise ValueError("Database error occurred while creating document.") from pme
                 except Exception as e:
-                    self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+                    logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                     raise
 
     def set_metadata(self, file_id: str, data: SetMetaData):
@@ -249,7 +249,7 @@ class CRUD:
                 )
                 return update_metadata
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -262,5 +262,5 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating metadata: {str(e)}")
+                logger.exception(f"Error updating metadata: {str(e)}")
                 raise

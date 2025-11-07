@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
+from baseapp.utils.utility import generate_uuid
 from baseapp.model.common import CurrentUser, CurrentClient
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
@@ -19,7 +20,7 @@ def create_access_token(data: dict, expire_in: int = 60) -> tuple:
     to_encode = data.copy()
     _expire_in = expire_in if expire_in else jwt_access_expired_in
     expire = datetime.now(timezone.utc) + timedelta(minutes=_expire_in)
-    to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
+    to_encode.update({"exp": expire, "jti": generate_uuid()})
     token = jwt.encode(to_encode, jwt_secret_key, algorithm=jwt_algorithm)
     return token, _expire_in
 

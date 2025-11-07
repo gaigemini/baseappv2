@@ -1,5 +1,6 @@
 from pymongo.errors import PyMongoError
 from typing import List
+import logging
 
 from baseapp.config import setting, mongodb
 
@@ -8,6 +9,7 @@ config = setting.get_settings()
 class PermissionChecker:
     def __init__(self, permissions_collection="_featureonrole"):
         self.permissions_collection = permissions_collection
+        self.logger = logging.getLogger()
 
     def has_permission(self, roles: List, f_id: str, required_permission: int) -> bool:
         """

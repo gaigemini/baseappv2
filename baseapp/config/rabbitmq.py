@@ -3,7 +3,7 @@ import pika,logging
 import pika.exceptions
 from baseapp.config import setting
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class RabbitMqConn:
     def __init__(self, host=None, port=None, user=None, password=None):

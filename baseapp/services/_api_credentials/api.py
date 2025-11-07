@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Query, Depends, Request
+from fastapi import APIRouter, Query, Depends
 
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
 from baseapp.utils.jwt import get_current_user
-from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -18,9 +17,8 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/api_credentials", tags=["API Credentials"])
 
 @router.post("/create", response_model=ApiResponse)
-@cbor_or_json
 async def create(
-    req: Request,
+    req: ApiCredential,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 2):  # 2 untuk izin simpan baru
@@ -33,15 +31,13 @@ async def create(
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, ApiCredential)
     response = _crud.create(req)
 
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/create-by-owner", response_model=ApiResponse)
-@cbor_or_json
 async def create_by_owner(
-    req: Request,
+    req: ApiCredentialCreate,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
     if cu.authority != 1:
@@ -57,13 +53,11 @@ async def create_by_owner(
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, ApiCredentialCreate)
     response = _crud.create_by_owner(req)
 
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.delete("/delete/{api_credential_id}", response_model=ApiResponse)
-@cbor_or_json
 async def delete_data(api_credential_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
@@ -83,7 +77,6 @@ async def delete_data(api_credential_id: str, cu: CurrentUser = Depends(get_curr
     return ApiResponse(status=0, message="Data deleted", data=response)
 
 @router.get("", response_model=ApiResponse)
-@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),

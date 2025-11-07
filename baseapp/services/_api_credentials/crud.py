@@ -1,4 +1,4 @@
-import logging,uuid,secrets,bcrypt
+import logging,secrets,bcrypt
 
 from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any
@@ -8,14 +8,14 @@ from datetime import datetime, timezone
 from baseapp.config import setting, mongodb
 from baseapp.services._api_credentials.model import ApiCredential, ApiCredentialCreate
 from baseapp.services.audit_trail_service import AuditTrailService
-from baseapp.utils.utility import hash_password
+from baseapp.utils.utility import hash_password, generate_uuid
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self, collection_name="_api_credentials"):
         self.collection_name = collection_name
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -43,7 +43,7 @@ class CRUD:
             collection = mongo._db[self.collection_name]
 
             obj = data.model_dump()
-            obj["_id"] = str(uuid.uuid4())
+            obj["_id"] = generate_uuid()
             obj["rec_by"] = self.user_id
             obj["rec_date"] = datetime.now(timezone.utc)
             obj["org_id"] = self.org_id
@@ -61,10 +61,10 @@ class CRUD:
                     "status": obj["status"]
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while creating document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
     def create_by_owner(self, data: ApiCredentialCreate):
@@ -76,7 +76,7 @@ class CRUD:
             collection = mongo._db[self.collection_name]
 
             obj = data.model_dump()
-            obj["_id"] = str(uuid.uuid4())
+            obj["_id"] = generate_uuid()
             obj["rec_by"] = self.user_id
             obj["rec_date"] = datetime.now(timezone.utc)
             try:
@@ -94,10 +94,10 @@ class CRUD:
                     "status": obj["status"]
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while creating document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
     def get_by_id(self, api_cred_id: str):
@@ -132,7 +132,7 @@ class CRUD:
                 )
                 return credential
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -145,7 +145,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while find document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
     def update_by_id(self, api_cred_id: str, data):
@@ -188,7 +188,7 @@ class CRUD:
                     "status": update_api_credential["status"]
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -201,7 +201,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating api credential: {str(e)}")
+                logger.exception(f"Error updating api credential: {str(e)}")
                 raise
 
     def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
@@ -267,7 +267,7 @@ class CRUD:
                     },
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving api credential with filters and pagination: {str(e)}")
+                logger.error(f"Error retrieving api credential with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -279,5 +279,5 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Query, Depends, Request, Response
+from fastapi import APIRouter, Query, Depends, Response
 from typing import Optional, List
 from datetime import datetime, timezone
 
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
 from baseapp.utils.jwt import get_current_user, decode_jwt_token, revoke_all_refresh_tokens
-from baseapp.utils.utility import cbor_or_json, parse_request_body
 from baseapp.config.redis import RedisConn
 from baseapp.config import setting
 config = setting.get_settings()
@@ -20,8 +19,7 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_user", tags=["User"])
 
 @router.post("/create", response_model=ApiResponse)
-@cbor_or_json
-async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def create(req: model.User, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
 
@@ -32,13 +30,11 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, model.User)
     response = _crud.create(req)
     return ApiResponse(status=0, message="Data created", data=response)
     
 @router.put("/update/{user_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_by_admin(user_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_by_admin(user_id: str, req: model.UpdateByAdmin, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -49,12 +45,10 @@ async def update_by_admin(user_id: str, req: Request, cu: CurrentUser = Depends(
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, model.UpdateByAdmin)
     response = _crud.update_all_by_admin(user_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.delete("/delete/{user_id}", response_model=ApiResponse)
-@cbor_or_json
 async def update_status(user_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
@@ -74,8 +68,7 @@ async def update_status(user_id: str, cu: CurrentUser = Depends(get_current_user
     return ApiResponse(status=0, message="Data deleted", data=response)
 
 @router.put("/change_password", response_model=ApiResponse)
-@cbor_or_json
-async def update_change_password(req: Request, response: Response, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_change_password(req: model.ChangePassword, response: Response, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_user", 4) or permission_checker.has_permission(cu.roles, "_myprofile", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -86,7 +79,6 @@ async def update_change_password(req: Request, response: Response, cu: CurrentUs
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, model.ChangePassword)
     result = _crud.change_password(req)
 
     # Revoke access token
@@ -110,8 +102,7 @@ async def update_change_password(req: Request, response: Response, cu: CurrentUs
     return ApiResponse(status=0, message="Password has change", data=result)
 
 @router.put("/reset_password/{user_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_reset_passowrd(user_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_reset_passowrd(user_id: str, req: model.ResetPassword, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_user", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -122,13 +113,11 @@ async def update_reset_passowrd(user_id: str, req: Request, cu: CurrentUser = De
         user_agent=cu.user_agent   # Jika ada
     )
     
-    req = await parse_request_body(req, model.ResetPassword)
     response = _crud.reset_password(user_id,req)
     revoke_all_refresh_tokens(user_id)
     return ApiResponse(status=0, message="Password has change", data=response)
 
 @router.get("", response_model=ApiResponse)
-@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -194,7 +183,6 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{user_id}", response_model=ApiResponse)
-@cbor_or_json
 async def find_by_id(user_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_user", 1) or
         permission_checker.has_permission(cu.roles, "_myprofile", 1)):  # 1 untuk izin baca

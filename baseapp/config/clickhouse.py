@@ -2,7 +2,7 @@ import logging, clickhouse_connect
 from baseapp.config import setting
 from datetime import datetime
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class Column:
     def __init__(self, name, data_type, default_value=None, is_primary_key=False, is_index=False):

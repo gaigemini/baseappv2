@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, Any, List
 from enum import Enum
 
+MINIO_STORAGE_SIZE_LIMIT : int = 10737418240  # 10 GB in bytes
+
 class Status(str, Enum):
     """Status of a user and client"""
     ACTIVE = "ACTIVE"

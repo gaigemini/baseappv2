@@ -4,7 +4,7 @@ from baseapp.services import publisher
 from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 def test_connection_to_redis():
     logger.info("Redis test connection")

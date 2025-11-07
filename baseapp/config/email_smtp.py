@@ -9,7 +9,7 @@ from email import encoders
 
 from baseapp.config import setting
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class EmailSender:
     def __init__(self, host=None, port=None, username=None, password=None, use_tls=True):

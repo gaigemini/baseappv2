@@ -1,4 +1,4 @@
-import logging, random, uuid
+import logging, random
 from datetime import datetime, timezone
 
 from baseapp.model.common import Status
@@ -6,16 +6,16 @@ from baseapp.config import setting, mongodb
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services._forgot_password.model import OTPRequest, VerifyOTPRequest, ResetPasswordRequest
-from baseapp.utils.utility import hash_password
+from baseapp.utils.utility import hash_password, generate_uuid
 from baseapp.utils.jwt import revoke_all_refresh_tokens
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
-        self.logger = logging.getLogger()
         self.redis_conn = RedisConn()
-        self.queue_manager = RedisQueueManager(queue_name="otp_tasks")  # Pass actual RedisConn here
+        self.queue_manager = RedisQueueManager(redis_conn=self.redis_conn,queue_name="otp_tasks")
 
     def is_valid_user(self,username: str) -> bool:
         client = mongodb.MongoConn()
@@ -58,7 +58,7 @@ class CRUD:
                 stored_otp = conn.get(f"otp:{req.email}")
 
             if stored_otp and stored_otp == req.otp:
-                reset_token = str(uuid.uuid4())  # Use UUID for secure random token
+                reset_token = generate_uuid()  # Use UUID for secure random token
                 with self.redis_conn as conn:
                     conn.delete(f"otp:{req.email}")
                     conn.setex(f"reset_token:{req.email}", 900, reset_token)  # TTL: 15 minutes

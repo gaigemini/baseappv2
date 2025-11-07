@@ -1,7 +1,7 @@
 import redis,logging
 from baseapp.config import setting
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class RedisConn:
     def __init__(self, host=None, port=None, max_connections=10, retry_on_timeout=True, socket_timeout=5):

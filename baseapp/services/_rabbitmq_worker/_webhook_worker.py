@@ -1,4 +1,4 @@
-import logging,json
+import logging
 logger = logging.getLogger("rabbit")
 
 class WebhookWorker:

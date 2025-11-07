@@ -10,13 +10,13 @@ from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.utility import get_enum
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
         self.collection_feature = "_feature"
         self.collection_feature_on_role = "_featureonrole"
         self.collection_menu = "_menu"
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, authority: int, roles: List, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -99,7 +99,7 @@ class CRUD:
                         rolesFeature[i['f_id']] = i['permission']
                     else:
                         rolesFeature[i['f_id']] = i['permission'] | rolesFeature[i['f_id']]
-                self.logger.debug(f"roles of feature: {rolesFeature}")
+                logger.debug(f"roles of feature: {rolesFeature}")
                     
                 resultsMenu = []
                 resultsParent = []
@@ -124,7 +124,7 @@ class CRUD:
                         })
                     # endregion
 
-                    self.logger.debug(f"data menu : {data}")
+                    logger.debug(f"data menu : {data}")
                     if data['feature_docs'] != None:
                         if self.authority & data['feature_docs']['authority']:
                             if  data['feature_docs']['_id'] in rolesFeature:
@@ -159,7 +159,7 @@ class CRUD:
 
                 return sorted(resultsMenu, key=itemgetter('sortnumber'))
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
+                logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -171,5 +171,5 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

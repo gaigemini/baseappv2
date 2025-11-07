@@ -1,20 +1,21 @@
-import logging,uuid
+import logging
 
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
+from baseapp.utils.utility import generate_uuid
 from baseapp.config import setting, mongodb
 from baseapp.services._enum import model
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self, collection_name="_enum"):
         self.collection_name = collection_name
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -42,7 +43,7 @@ class CRUD:
             collection = mongo._db[self.collection_name]
 
             obj = data.model_dump()
-            obj["_id"] = data.id or str(uuid.uuid4())
+            obj["_id"] = data.id or generate_uuid()
             obj["rec_by"] = self.user_id
             obj["rec_date"] = datetime.now(timezone.utc)
             obj["org_id"] = self.org_id
@@ -51,13 +52,13 @@ class CRUD:
                 result = collection.insert_one(obj)
                 return obj
             except DuplicateKeyError as dke:
-                self.logger.error(f"Duplicate entry detected: {str(dke)}")
+                logger.error(f"Duplicate entry detected: {str(dke)}")
                 raise ValueError("A document with the same ID already exists.") from dke
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while creating document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
                 raise
 
     def get_by_id(self, enum_id: str):
@@ -92,7 +93,7 @@ class CRUD:
                 )
                 return enum
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -105,7 +106,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while find document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
     def update_by_id(self, enum_id: str, data: model.EnumUpdate):
@@ -143,7 +144,7 @@ class CRUD:
                 )
                 return update_enum
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -156,7 +157,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating enum: {str(e)}")
+                logger.exception(f"Error updating enum: {str(e)}")
                 raise
 
     def delete_by_id(self, enum_id: str):
@@ -189,7 +190,7 @@ class CRUD:
                 )
                 return result.deleted_count
             except PyMongoError as pme:
-                self.logger.error(f"Database error while deleting document with ID {enum_id}: {str(pme)}")
+                logger.error(f"Database error while deleting document with ID {enum_id}: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -201,7 +202,7 @@ class CRUD:
                 )
                 raise ValueError("Database error while deleting document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise
             
     def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
@@ -307,7 +308,7 @@ class CRUD:
                     },
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving enum with filters and pagination: {str(e)}")
+                logger.error(f"Error retrieving enum with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -319,5 +320,5 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

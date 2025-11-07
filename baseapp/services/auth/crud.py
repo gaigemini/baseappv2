@@ -1,11 +1,11 @@
-import logging, bcrypt
+import logging
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo, ClientInfo
 from baseapp.model.common import Status
-from baseapp.utils.utility import get_enum
+from baseapp.utils.utility import get_enum, check_password
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
@@ -55,17 +55,15 @@ class CRUD:
         if user_info.get("status") != Status.ACTIVE.value:
             logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
-
-        hashed_password = user_info.get("password")
-        if not hashed_password:
+        
+        stored_hash = user_info.get("password")
+        if not stored_hash:
             logger.error(f"Password missing for user {user_info.get('username')}.")
             raise ValueError("User data is invalid.")
 
-        claim_password = password.encode('utf-8')
-
-        if not bcrypt.checkpw(claim_password, hashed_password):
+        if not check_password(password, stored_hash):
             logger.warning(f"User {user_info.get('username')} provided invalid password.")
-            raise ValueError("Invalid password.")
+            raise ValueError("Invalid password.") 
         
         return UserInfo(
             id=user_info["_id"], 
@@ -129,10 +127,9 @@ class CRUD:
             logger.warning(f"Client {client_id} is not active.")
             raise ValueError("Client is not active.")
 
-        client_secret_hash = client_info.get("client_secret_hash")
-        claim_client_secret = client_secret.encode('utf-8')
-
-        if not bcrypt.checkpw(claim_client_secret, client_secret_hash):
+        stored_hash = client_info.get("client_secret_hash")
+        
+        if not check_password(client_secret, stored_hash):
             logger.warning(f"Client {client_id} provided invalid secret.")
             raise ValueError("Invalid client secret.")
         

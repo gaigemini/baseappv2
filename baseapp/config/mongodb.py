@@ -1,8 +1,9 @@
+import logging
 from pymongo import MongoClient,errors
-import logging,uuid
 from baseapp.config import setting
 
-logger = logging.getLogger()
+from baseapp.utils.utility import generate_uuid
+logger = logging.getLogger(__name__)
 
 class MongoConn:
     def __init__(self, host=None, port=None, database=None, username=None, password=None):
@@ -106,7 +107,7 @@ class MongoConn:
                     # Memeriksa dan menambahkan _id jika belum ada
                     for data in initial_data:
                         if "id" not in data:
-                            data["_id"] = str(uuid.uuid4())
+                            data["_id"] = generate_uuid()
                         else:
                             data["_id"] = data["id"]
                             del data["id"]

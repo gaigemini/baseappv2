@@ -2,8 +2,7 @@ import logging
 from urllib import parse
 
 from pymongo.errors import PyMongoError
-from typing import Optional, Dict, Any
-from pymongo import ASCENDING, DESCENDING
+from typing import Optional
 from datetime import datetime, timezone
 
 import requests
@@ -13,13 +12,13 @@ from baseapp.services.oauth_google.model import Google, GoogleToken
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self, collection_name="_user"):
         self.collection_name = collection_name
         self.httpsOptionsForGoogle = "https://www.googleapis.com:443"
         self.redirect_uri = config.google_redirect_uri
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -81,7 +80,7 @@ class CRUD:
                 del update_user["password"]
                 return update_user
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -94,7 +93,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating user: {str(e)}")
+                logger.exception(f"Error updating user: {str(e)}")
                 raise
 
     def login_google(self, auth_code):
@@ -149,10 +148,10 @@ class CRUD:
                     raise ValueError("User not found")
                 return user
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while find document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
     def unlink_to_google(self):
@@ -192,7 +191,7 @@ class CRUD:
                 del update_user["password"]
                 return update_user
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -205,5 +204,5 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating user: {str(e)}")
+                logger.exception(f"Error updating user: {str(e)}")
                 raise

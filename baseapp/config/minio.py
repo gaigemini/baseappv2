@@ -3,7 +3,7 @@ from minio import Minio
 from minio.error import S3Error, InvalidResponseError
 from baseapp.config import setting
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class MinioConn:
     def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, bucket="baseapp", verify=False):
