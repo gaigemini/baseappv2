@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-import logging, uuid
+import logging
 from typing import Dict, Any, Optional, Union
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer

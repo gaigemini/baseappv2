@@ -5,11 +5,11 @@ import logging
 from baseapp.config import setting, mongodb
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class PermissionChecker:
     def __init__(self, permissions_collection="_featureonrole"):
         self.permissions_collection = permissions_collection
-        self.logger = logging.getLogger()
 
     def has_permission(self, roles: List, f_id: str, required_permission: int) -> bool:
         """
@@ -34,8 +34,8 @@ class PermissionChecker:
 
                 return False
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while checking permission.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while checking permission: {str(e)}")
+                logger.exception(f"Unexpected error occurred while checking permission: {str(e)}")
                 raise
