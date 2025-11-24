@@ -3,11 +3,12 @@ from pymongo import MongoClient,errors
 from baseapp.config import setting
 
 from baseapp.utils.utility import generate_uuid
+
+config = setting.get_settings()
 logger = logging.getLogger(__name__)
 
 class MongoConn:
     def __init__(self, host=None, port=None, database=None, username=None, password=None):
-        config = setting.get_settings()
         self.host = host or config.mongodb_host
         self.port = port or config.mongodb_port
         self.database = database or config.mongodb_db

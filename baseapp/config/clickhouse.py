@@ -2,6 +2,7 @@ import logging, clickhouse_connect
 from baseapp.config import setting
 from datetime import datetime
 
+config = setting.get_settings()
 logger = logging.getLogger(__name__)
 
 class Column:
@@ -72,7 +73,6 @@ class TableSchema:
 
 class ClickHouseConn:
     def __init__(self, host=None, port=None, username=None, password=None, database=None, secure=False, verify=False):
-        config = setting.get_settings()
         self.host = host or config.clickhouse_host
         self.port = port or config.clickhouse_port
         self.username = username or config.clickhouse_user

@@ -1,6 +1,5 @@
-from uuid import UUID
 from pydantic import BaseModel, Field
-from typing import Optional, Union, Literal
+from typing import Optional
 from baseapp.model.common import Status
 
 class Organization(BaseModel):

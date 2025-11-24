@@ -3,11 +3,11 @@ from minio import Minio
 from minio.error import S3Error, InvalidResponseError
 from baseapp.config import setting
 
+config = setting.get_settings()
 logger = logging.getLogger(__name__)
 
 class MinioConn:
     def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, bucket="baseapp", verify=False):
-        config = setting.get_settings()
         self.host = host or config.minio_host
         self.port = port or config.minio_port
         self.access_key = access_key or config.minio_access_key

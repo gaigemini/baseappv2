@@ -25,5 +25,3 @@ async def verify_otp(req: VerifyOTPRequest):
 async def verify_otp(req: ResetPasswordRequest):
     response = _crud.reset_password(req)
     return ApiResponse(status=0, data=response)
-
-
