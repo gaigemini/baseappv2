@@ -20,9 +20,9 @@ class PermissionChecker:
         :param required_permission: Izin yang dibutuhkan (contoh: 1 untuk read).
         :return: True jika salah satu role memiliki izin, False jika tidak.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.permissions_collection]
+        
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.permissions_collection]
             try:               
                 # Cari semua role yang relevan di database
                 permissions = collection.find({"r_id": {"$in": roles}, "f_id": f_id})

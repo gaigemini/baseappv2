@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -14,6 +15,9 @@ import logging.config
 logging.config.fileConfig('logging.conf')
 from logging import getLogger
 logger = getLogger()
+
+from baseapp.config.mongodb import MongoConn
+from baseapp.config.postgresql import PostgreSQLConn
 
 from baseapp.test_connection.api import router as testconn_router # test connection
 from baseapp.services.database.api import router as db_router # init database
@@ -33,6 +37,38 @@ from baseapp.services._forgot_password.api import router as forgot_password_rout
 from baseapp.services.oauth_google.api import router as oauth_google_router # Oauth Google
 from baseapp.services._api_credentials.api import router as api_credential_router # API Credentials
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
+    logger.info("Startup: Initializing resources...")
+    
+    try:
+        # Init MongoDB
+        MongoConn.initialize()
+        logger.info("MongoDB Connection Pool initialized.")
+        
+        # Init PostgreSQL (Jika pakai)
+        PostgreSQLConn.initialize_pool()
+        logger.info("PostgreSQL Connection Pool initialized.")
+        
+    except Exception as e:
+        logger.error(f"Startup Failed: {e}")
+        # Opsional: raise e # Uncomment jika ingin app crash kalau DB mati
+    
+    yield # <--- Titik tunggu (Aplikasi berjalan di sini)
+
+    # 2. BAGIAN SHUTDOWN (Dijalankan saat aplikasi mau mati)
+    logger.info("Shutdown: Cleaning up resources...")
+    
+    try:
+        MongoConn.close_connection()
+        PostgreSQLConn.close_pool()
+        
+    except Exception as e:
+        logger.error(f"Shutdown error: {e}")
+    
+    logger.info("Resources cleaned up.")
+    
 app = FastAPI(
     title="baseapp",
     description="Gateway for baseapp implementation.",

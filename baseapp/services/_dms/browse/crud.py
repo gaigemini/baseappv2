@@ -19,7 +19,6 @@ class CRUD:
         self.collection_folder = "_dmsfolder"
         self.collection_organization = "_organization"
         self.minio_conn = minio.MinioConn()
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -42,9 +41,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             with self.minio_conn as conn:
                 try:
                     # Apply filters
@@ -122,9 +120,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_folder]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_folder]
             try:
                 # Apply filters
                 query_filter = {}
@@ -205,9 +202,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             with self.minio_conn as conn:
                 try:
                     # Apply filters
@@ -313,9 +309,8 @@ class CRUD:
         """
         Retrieve a free space by org id (session).
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_organization]
             try:
                 obj = collection.find_one({"_id": self.org_id})
                 if not obj:
@@ -361,9 +356,8 @@ class CRUD:
         """
         File move to trash by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -419,10 +413,9 @@ class CRUD:
         Returns:
             Dict berisi status dan pesan
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
-            collection_org = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()
@@ -486,7 +479,6 @@ class CRUD:
         Returns:
             Dict berisi status dan pesan
         """
-
         def _recursive(collection_file,collection_folder,start,depth=-1):
             try:
                 folder_ids = [start]
@@ -518,11 +510,11 @@ class CRUD:
                 logger.error(f"Database error while recursive folders with ID {start}: {str(e)}")
                 return None
             
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_file = mongo._db[self.collection_file]
-            collection_folder = mongo._db[self.collection_folder]
-            collection_org = mongo._db[self.collection_organization]
+        
+        with mongodb.MongoConn() as mongo:
+            collection_file = mongo.get_database()[self.collection_file]
+            collection_folder = mongo.get_database()[self.collection_folder]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()

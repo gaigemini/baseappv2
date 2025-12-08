@@ -38,10 +38,9 @@ class CRUD:
         """
         Update a role's data by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_feature = mongo._db[self.collection_feature]
-            collection_role = mongo._db[self.collection_feature_on_role]
+        with mongodb.MongoConn() as mongo:
+            collection_feature = mongo.get_database()[self.collection_feature]
+            collection_role = mongo.get_database()[self.collection_feature_on_role]
             bitRA = get_enum(mongo,"ROLEACTION")
             bitRA = bitRA["value"]
             obj = data.model_dump()
@@ -104,10 +103,9 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_feature = mongo._db[self.collection_feature]
-            collection_feature_on_role = mongo._db[self.collection_feature_on_role]
+        with mongodb.MongoConn() as mongo:
+            collection_feature = mongo.get_database()[self.collection_feature]
+            collection_feature_on_role = mongo.get_database()[self.collection_feature_on_role]
             bitRA = get_enum(mongo,"ROLEACTION")
             bitRA = bitRA["value"]
             try:

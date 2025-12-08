@@ -38,9 +38,8 @@ class CRUD:
         """
         Insert a new enum into the collection.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
 
             obj = data.model_dump()
             obj["_id"] = data.id or generate_uuid()
@@ -65,9 +64,8 @@ class CRUD:
         """
         Retrieve a enum by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 enum = collection.find_one({"_id": enum_id})
                 if not enum:
@@ -113,9 +111,8 @@ class CRUD:
         """
         Update a enum's data by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -164,9 +161,8 @@ class CRUD:
         """
         Delete a enum by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 result = collection.delete_one({"_id": enum_id})
                 if result.deleted_count == 0:
@@ -209,9 +205,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 # Apply filters
                 query_filter = filters or {}

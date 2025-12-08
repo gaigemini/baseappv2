@@ -26,7 +26,7 @@ class CRUD:
         self.mongo.__exit__(exc_type, exc_value, traceback)
 
     def check_org(self, org_id) -> int:
-        collection = self.mongo._db[self.org_collection]
+        collection = self.mongo.get_database()[self.org_collection]
         query = {"_id": org_id}
         find_org = collection.find_one(query)
         if not find_org:
@@ -41,7 +41,7 @@ class CRUD:
     
     def get_feature(self, roles):
         _featureDict = {}
-        collection = self.mongo._db[self.permissions_collection]
+        collection = self.mongo.get_database()[self.permissions_collection]
         query = {"r_id": {"$in": roles}}
         find_role = collection.find(query)
         for i in find_role:
@@ -75,7 +75,7 @@ class CRUD:
         )
 
     def find_user(self, username: str) -> dict:
-        collection = self.mongo._db[self.user_collection]
+        collection = self.mongo.get_database()[self.user_collection]
         query = {"$or": [{"username": username}, {"email": username}]}
         user_info = collection.find_one(query)
         if not user_info:
@@ -107,7 +107,7 @@ class CRUD:
             return self.validate_password(user_data, password)
         
     def find_client_id(self, client_id: str) -> dict:
-        collection = self.mongo._db[self.api_credentials]
+        collection = self.mongo.get_database()[self.api_credentials]
         query = {"client_id": client_id}
         client_info = collection.find_one(query)
         if not client_info:

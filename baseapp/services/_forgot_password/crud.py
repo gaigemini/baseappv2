@@ -18,9 +18,8 @@ class CRUD:
         self.queue_manager = RedisQueueManager(redis_conn=self.redis_conn,queue_name="otp_tasks")
 
     def is_valid_user(self,username: str) -> bool:
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db["_user"]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()["_user"]
             query = {"$or": [{"username": username}, {"email": username}]}
             user_info = collection.find_one(query)
             if not user_info:
@@ -85,9 +84,8 @@ class CRUD:
                 
                 hashed_password = hash_password(req.new_password)
 
-                client = mongodb.MongoConn()
-                with client as mongo:
-                    collection = mongo._db["_user"]
+                with mongodb.MongoConn() as mongo:
+                    collection = mongo.get_database()["_user"]
                     obj = {}
                     obj["password"] = hashed_password
                     obj["mod_by"] = userinfo

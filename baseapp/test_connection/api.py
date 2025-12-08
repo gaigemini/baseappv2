@@ -30,11 +30,6 @@ async def test_connection_to_minio() -> ApiResponse:
 async def test_connection_to_rabbit() -> ApiResponse:
     resp = test.test_connection_to_rabbit()
     return ApiResponse(status=0, message=resp)
-    
-@router.get("/clickhouse")
-async def test_connection_to_clickhouse() -> ApiResponse:
-    resp = test.test_connection_to_clickhouse()
-    return ApiResponse(status=0, message=resp)
 
 @router.get("/redis-worker")
 async def test_redis_worker() -> ApiResponse:

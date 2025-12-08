@@ -36,7 +36,7 @@ class AuditTrailService:
         """
         Insert a new audittrail into the collection.
         """
-        collection = mongo_conn._db[self.collection_name]
+        collection = mongo_conn.get_database()[self.collection_name]
         data["_id"] = generate_uuid()
         try:
             result = collection.insert_one(data)

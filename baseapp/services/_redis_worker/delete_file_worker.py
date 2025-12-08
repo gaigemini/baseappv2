@@ -19,10 +19,9 @@ class DeleteFileWorker(BaseWorker):
         """
         logger.info(f"data task: {data} type data: {type(data)}")
 
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
-            collection_org = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()

@@ -44,12 +44,11 @@ class CRUD:
         """
         Insert a new owner into the collection.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
+        with mongodb.MongoConn() as mongo:
             self.mongo = mongo
 
-            collection = mongo._db[self.collection_org]
-            collection_user = mongo._db[self.collection_user]
+            collection = mongo.get_database()[self.collection_org]
+            collection_user = mongo.get_database()[self.collection_user]
 
             org_data = org_data.model_dump()
             user_data = user_data.model_dump()
@@ -95,12 +94,11 @@ class CRUD:
         """
         Insert a new partner into the collection.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
+        with mongodb.MongoConn() as mongo:
             self.mongo = mongo
 
-            collection = mongo._db[self.collection_org]
-            collection_user = mongo._db[self.collection_user]
+            collection = mongo.get_database()[self.collection_org]
+            collection_user = mongo.get_database()[self.collection_user]
 
             org_data = org_data.model_dump()
             user_data = user_data.model_dump()
@@ -173,7 +171,7 @@ class CRUD:
         """
         Insert a new role into the collection.
         """
-        collection = self.mongo._db[self.collection_role]
+        collection = self.mongo.get_database()[self.collection_role]
 
         role_data = role_data.model_dump()
 
@@ -211,8 +209,8 @@ class CRUD:
         """
         Generate role in feature into the collection.
         """
-        collection = self.mongo._db["_featureonrole"]
-        collection_features = self.mongo._db["_feature"]
+        collection = self.mongo.get_database()["_featureonrole"]
+        collection_features = self.mongo.get_database()["_feature"]
         initial_data = []
         try:
             # get enum bit of roleaction
@@ -260,7 +258,7 @@ class CRUD:
         """
         Insert a new user into the collection.
         """
-        collection = self.mongo._db[self.collection_user]
+        collection = self.mongo.get_database()[self.collection_user]
 
         user_data["_id"] = generate_uuid()
         user_data["rec_date"] = datetime.now(timezone.utc)
@@ -301,9 +299,8 @@ class CRUD:
         """
         Retrieve a organization by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_org]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_org]
             try:
                 data = collection.find_one({"_id": org_id})
                 if not data:
@@ -349,9 +346,8 @@ class CRUD:
         """
         Update a organization's data by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_org]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_org]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -400,11 +396,10 @@ class CRUD:
         """
         Update a organization's data [status] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_org]
-            collection_user = mongo._db[self.collection_user]
-            collection_role = mongo._db[self.collection_role]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_org]
+            collection_user = mongo.get_database()[self.collection_user]
+            collection_role = mongo.get_database()[self.collection_role]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -456,9 +451,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_org]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_org]
             try:
                 # Apply filters
                 query_filter = filters or {}
@@ -545,10 +539,9 @@ class CRUD:
             ValueError: If there's a database error
             Exception: For other unexpected errors
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
+        with mongodb.MongoConn() as mongo:
             self.mongo = mongo
-            collection = mongo._db[self.collection_org]
+            collection = mongo.get_database()[self.collection_org]
             try:
                 # Check if owner exists (authority=1)
                 owner_is_exist = collection.find_one({"authority":1})

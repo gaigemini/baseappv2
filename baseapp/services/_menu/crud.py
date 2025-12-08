@@ -41,11 +41,10 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_feature = mongo._db[self.collection_feature]
-            collection_feature_on_role = mongo._db[self.collection_feature_on_role]
-            collection_menu = mongo._db[self.collection_menu]
+        with mongodb.MongoConn() as mongo:
+            collection_feature = mongo.get_database()[self.collection_feature]
+            collection_feature_on_role = mongo.get_database()[self.collection_feature_on_role]
+            collection_menu = mongo.get_database()[self.collection_menu]
             bitRA = get_enum(mongo,"ROLEACTION")
             bitRA = bitRA["value"]
             try:
@@ -99,7 +98,7 @@ class CRUD:
                         rolesFeature[i['f_id']] = i['permission']
                     else:
                         rolesFeature[i['f_id']] = i['permission'] | rolesFeature[i['f_id']]
-                logger.debug(f"roles of feature: {rolesFeature}")
+                # logger.debug(f"roles of feature: {rolesFeature}")
                     
                 resultsMenu = []
                 resultsParent = []
@@ -124,7 +123,7 @@ class CRUD:
                         })
                     # endregion
 
-                    logger.debug(f"data menu : {data}")
+                    # logger.debug(f"data menu : {data}")
                     if data['feature_docs'] != None:
                         if self.authority & data['feature_docs']['authority']:
                             if  data['feature_docs']['_id'] in rolesFeature:

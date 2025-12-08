@@ -24,6 +24,17 @@ case "$1" in
         # Jalankan consumer sebagai modul dengan sisa argumennya
         exec python -m baseapp.services.redis_manager "$@"
         ;;
+    migrate)
+        echo "Running Database Migrations..."
+        # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)
+        alembic upgrade head
+        
+        # 2. (Opsional) Jalankan script seeding data awal jika Anda membuatnya
+        # echo "Seeding initial data..."
+        # python seed.py
+        
+        echo "Migration completed."
+        ;;
     *)
         # Jalankan perintah apa pun yang diberikan
         exec "$@"

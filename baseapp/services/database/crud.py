@@ -17,8 +17,7 @@ class CRUD:
         try:
             with open(f"{config.file_location}initdata.json") as json_file:
                 initData = json.load(json_file)            
-                client = mongodb.MongoConn()
-                with client as mongo_conn:
+                with mongodb.MongoConn() as mongo_conn:
                     is_exists = mongo_conn.check_database_exists()
                     logger.debug(f"Database exist is {is_exists}")
                     if not is_exists:

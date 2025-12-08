@@ -41,9 +41,8 @@ class CRUD:
         """
         Link current account to google.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 profile = self._getProfile(data.access_token)
                 google_data = Google(email=profile["email"],id=profile["id"],name=profile["name"],picture=profile["picture"])
@@ -138,9 +137,8 @@ class CRUD:
         """
         Retrieve a user by Google ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 profile = self._getProfile(data.access_token)
                 user = collection.find_one({"google.email": profile["email"]})
@@ -158,9 +156,8 @@ class CRUD:
         """
         Unlink current account from google
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 obj = {"google":None}
                 obj["mod_by"] = self.user_id

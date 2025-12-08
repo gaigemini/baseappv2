@@ -34,7 +34,7 @@ def generate_password(length: int = 8):
     return password
  
 def get_enum(mongo, enum_id):
-    collection = mongo._db["_enum"]
+    collection = mongo.get_database()["_enum"]
     try:
         enum = collection.find_one({"_id": enum_id})
         return enum

@@ -40,9 +40,8 @@ class CRUD:
         """
         Insert a new user into the collection.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
 
             obj = data.model_dump()
             obj["_id"] = generate_uuid()
@@ -71,9 +70,8 @@ class CRUD:
         """
         Retrieve a user by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 # Apply filters
                 query_filter = {"_id": user_id}
@@ -204,9 +202,8 @@ class CRUD:
         """
         Update a user's data [username,email,roles,status] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -256,9 +253,8 @@ class CRUD:
         """
         Update a user's data [username] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -307,9 +303,8 @@ class CRUD:
         """
         Update a user's data [email] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -358,9 +353,8 @@ class CRUD:
         """
         Update a user's data [roles] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -410,9 +404,8 @@ class CRUD:
         """
         Update a user's data [status] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -459,7 +452,7 @@ class CRUD:
                 raise
     
     def _validate_user(self,mongo,old_password):
-        collection = mongo._db[self.collection_name]
+        collection = mongo.get_database()[self.collection_name]
         query = {"_id": self.user_id}
         user_info = collection.find_one(query)
         if not user_info:
@@ -488,9 +481,8 @@ class CRUD:
         if data.new_password != data.verify_password:
             raise ValueError("New password is not match with verify password.")
         
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 validate_old_password = self._validate_user(mongo,data.old_password)
 
@@ -546,9 +538,8 @@ class CRUD:
         if data.new_password != data.verify_password:
             raise ValueError("New password is not match with verify password.")
         
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 password = is_none(data.new_password, generate_password())
                 hashed_password = hash_password(password)
@@ -599,9 +590,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 # Apply filters
                 query_filter = filters or {}

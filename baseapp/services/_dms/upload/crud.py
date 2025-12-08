@@ -71,7 +71,7 @@ class CRUD:
         Function to create folders based on the doctype structure.
         """
         # Retrieve doctype
-        doctype_collection = mongo._db[self.collection_doctype]
+        doctype_collection = mongo.get_database()[self.collection_doctype]
         doctypeList = doctype_collection.find_one({'_id': values['doctype']})
 
         if not doctypeList:
@@ -108,7 +108,7 @@ class CRUD:
             if levelFolder > 0:
                 query["pid"] = pidFolder
 
-            collection_folder = mongo._db[self.collection_folder]
+            collection_folder = mongo.get_database()[self.collection_folder]
             getFolder = list(collection_folder.find(query))
 
             if len(getFolder) == 0:
@@ -148,10 +148,10 @@ class CRUD:
         UUID = generate_uuid()
         payload = payload.model_dump()
 
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_file = mongo._db[self.collection_file]
-            collection_org = mongo._db[self.collection_organization]
+        
+        with mongodb.MongoConn() as mongo:
+            collection_file = mongo.get_database()[self.collection_file]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 minio_client = conn.get_minio_client()
                 try:
@@ -216,9 +216,9 @@ class CRUD:
         """
         Set metadata to file.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)

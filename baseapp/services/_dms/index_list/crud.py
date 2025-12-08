@@ -39,9 +39,8 @@ class CRUD:
         """
         Insert a new index name into the collection.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
 
             obj = data.model_dump()
             obj["_id"] = generate_uuid()
@@ -62,9 +61,8 @@ class CRUD:
         """
         Retrieve a index by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 obj = collection.find_one({"_id": index_id})
                 if not obj:
@@ -110,9 +108,8 @@ class CRUD:
         """
         Update a index's data by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -161,9 +158,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             try:
                 # Apply filters
                 query_filter = {}
@@ -248,9 +244,8 @@ class CRUD:
         """
         Update a index's data [status] by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_name]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_name]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
